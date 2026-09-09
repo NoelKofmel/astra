@@ -22,6 +22,28 @@ Lesegäste. Kommunikation auf Deutsch, Schweizer Rechtschreibung (`ss`, kein `ß
 **Planungsphase abgeschlossen. Noch kein Anwendungscode.** Als Nächstes: Roadmap
 Phase 0 (`docs/05-roadmap.md`).
 
+## Sprache — verbindlich
+
+| Wo | Sprache |
+|---|---|
+| Commit-Messages, Branch-Namen, PRs, Issues | **Englisch** |
+| Code, Bezeichner, Kommentare, Log-Ausgaben | **Englisch** |
+| `README.md` | **Englisch** |
+| Fehlermeldungen und UI-Texte für Noel | Deutsch |
+| Dokumente unter `docs/` | Deutsch |
+| Gespräch mit Noel | **immer Deutsch** |
+
+Commit-Messages im Imperativ, englisch, ohne Punkt am Ende:
+`Add Bluesky Jetstream collector`, nicht `Added...` oder `Bluesky-Collector
+hinzugefügt`. Body bei Bedarf, erklärt **warum**, nicht was — das steht im Diff.
+
+Schweizer Rechtschreibung in allem Deutschen: `ss` statt `ß`.
+
+> Offen: ob `docs/` und `CLAUDE.md` ebenfalls auf Englisch wechseln. Argument
+> dafür: der Code ist ohnehin englisch, gemischte Repos driften auseinander, und
+> das Repo ist öffentlich. Entscheidung steht aus — bis dahin gilt die Tabelle
+> oben.
+
 ## Dokumentation zuerst lesen
 
 | Frage | Dokument |

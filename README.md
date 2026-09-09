@@ -1,64 +1,79 @@
 # ASTRA
 
-> Ein personalisierter Tech-News-Aggregator. Sammelt aus vielen Quellen, erkennt
-> dass die gleiche Story überall gleichzeitig auftaucht, fasst sie mit KI
-> zusammen und erklärt sie — und meldet sich nur, wenn es wirklich relevant ist.
+> A personalised tech news aggregator. Pulls from many sources, recognises when
+> the same story surfaces everywhere at once, summarises and explains it with
+> AI — and only speaks up when something is genuinely relevant.
 
-**Status:** Planungsphase abgeschlossen, Umsetzung noch nicht begonnen.
+**Status:** Planning complete. Implementation not started.
 
-> **Zur Doku:** Alles hier ist **Leitfaden, nicht Anleitung.** Die Dokumente
-> halten Richtung und Begründungen fest, damit dieselbe Entscheidung nicht
-> dreimal getroffen werden muss. Sie schreiben die Umsetzung nicht vor. Was sich
-> beim Bauen als unpraktisch erweist, wird geändert — die Erfahrung am laufenden
-> System schlägt jeden Plan auf Papier. Änderungen wandern zurück ins passende
-> Dokument, grössere Richtungswechsel bekommen einen Eintrag im
-> [Entscheidungslog](docs/06-entscheidungen.md).
+> **About the docs:** everything here is a **guide, not a manual.** The documents
+> capture direction and reasoning so the same decision doesn't have to be made
+> three times. They do not prescribe implementation. Whatever turns out to be
+> impractical while building gets changed — experience with a running system
+> beats any plan on paper. Changes flow back into the relevant document; larger
+> shifts in direction get an entry in the
+> [decision log](docs/06-entscheidungen.md).
 
-## Das Problem
+## The problem
 
-Es gibt keinen guten Ort, an dem man als Informatiker*in die für einen selbst
-relevanten Tech-News bekommt. Twitter/X ist Lärm, Reddit ist unstrukturiert,
-Newsletter sind zu langsam, HN ist ohne Personalisierung. Wer "Nvidia übernimmt
-Hugging Face" mitkriegen will, muss fünf Apps offen haben — und liest die gleiche
-Meldung dann in fünf Varianten.
+There is no good place to get the tech news that is actually relevant to you as
+a software engineer. X is noise, Reddit is unstructured, newsletters are too
+slow, Hacker News has no personalisation. Catching something like "Nvidia
+acquires Hugging Face" means keeping five apps open — and then reading the same
+story in five variations.
 
-## Die Lösung
+## The approach
 
-Eine Pipeline, die den Lärm zu **Storys** verdichtet statt zu Posts:
+A pipeline that condenses noise into **stories** rather than posts:
 
 ```
-Quellen  →  Normalisierung  →  Clustering  →  KI-Anreicherung  →  Ranking  →  Feed + Push
+Sources  →  Normalise  →  Cluster  →  AI enrichment  →  Rank  →  Feed + Push
 ```
 
-Der Kern ist das Clustering: HN-Thread, Reddit-Post, TechCrunch-Artikel und
-Bluesky-Diskussion zum gleichen Ereignis werden zu **einer** Story mit mehreren
-Belegen. Dass eine Story an fünf Orten gleichzeitig auftaucht, ist dabei selbst
-das stärkste Relevanzsignal.
+Clustering is the core. The HN thread, the Reddit post, the TechCrunch article
+and the Bluesky discussion about one event become **one** story backed by
+several pieces of evidence. And the fact that a story shows up in five places at
+once is itself the strongest relevance signal available — it falls out of the
+clustering for free.
 
-## Dokumentation
+## Documentation
 
-| Dokument | Inhalt |
+Written in German; see [Language](#language) below.
+
+| Document | Contents |
 |---|---|
-| [`docs/01-architektur.md`](docs/01-architektur.md) | Pipeline, Services, Datenmodell, Deployment |
-| [`docs/02-quellen.md`](docs/02-quellen.md) | Quellenkatalog, APIs, Rate Limits, Auth-Status |
-| [`docs/03-ranking-und-ki.md`](docs/03-ranking-und-ki.md) | Clustering, LLM-Einsatz, Scoring, Kosten |
-| [`docs/04-design.md`](docs/04-design.md) | Design-System, Globus, Layout |
-| [`docs/05-roadmap.md`](docs/05-roadmap.md) | Phasenplan mit Definition of Done |
-| [`docs/06-entscheidungen.md`](docs/06-entscheidungen.md) | Entscheidungslog (ADRs) |
-| [`CLAUDE.md`](CLAUDE.md) | Projektkontext für Claude-Code-Sessions |
+| [`docs/01-architektur.md`](docs/01-architektur.md) | Pipeline, services, data model, deployment |
+| [`docs/02-quellen.md`](docs/02-quellen.md) | Source catalogue, APIs, rate limits, legal |
+| [`docs/03-ranking-und-ki.md`](docs/03-ranking-und-ki.md) | Clustering, LLM usage, scoring, cost model |
+| [`docs/04-design.md`](docs/04-design.md) | Design system, globe, layout |
+| [`docs/05-roadmap.md`](docs/05-roadmap.md) | Phased plan with definition of done |
+| [`docs/06-entscheidungen.md`](docs/06-entscheidungen.md) | Decision log (ADRs) |
+| [`CLAUDE.md`](CLAUDE.md) | Project context for Claude Code sessions |
 
-## Eckdaten
+## At a glance
 
-- **Nutzung:** Primär ein Profil (Noel), Lesezugriff für 1–2 Freunde
+- **Users:** one personalisation profile (Noel), read access for one or two friends
 - **Hosting:** Hetzner VPS, Docker Compose, GitHub Actions CI/CD
-- **Quellen:** Hacker News, Reddit, RSS, GitHub Trending, Bluesky, arXiv,
-  Hugging Face, Product Hunt — **kein X/Twitter** (siehe ADR-004)
-- **KI:** Claude Haiku 4.5 (Triage) → Sonnet 5 (Zusammenfassungen) → Opus 5 (Deep Dive)
-- **Push:** Telegram-Bot
-- **Budget:** ~20 CHF/Monat bei einem Rahmen von 25–30 CHF
+- **Sources:** Hacker News, Reddit, RSS, GitHub, Bluesky, arXiv, Hugging Face,
+  Product Hunt — **no X/Twitter** (see ADR-004)
+- **AI:** Claude Haiku 4.5 (triage) → Sonnet 5 (summaries) → Opus 5 (deep dive)
+- **Push:** Telegram bot
+- **Budget:** ~20 CHF/month against a 25–30 CHF ceiling
 
-## Lizenz / Inhalte
+## Stack
 
-Privates Projekt. Fremdinhalte werden **nicht** vollständig gespeichert oder
-reproduziert — nur Metadaten, kurze Snippets und eigene KI-Zusammenfassungen,
-immer mit Link und Quellenangabe. Siehe [`docs/02-quellen.md`](docs/02-quellen.md#rechtliches).
+Next.js 16 · React 19 · TypeScript · Tailwind CSS v4 · Drizzle ORM ·
+PostgreSQL 17 + pgvector · Redis + BullMQ · react-three-fiber ·
+Anthropic API · Voyage AI embeddings
+
+## Language
+
+- **English:** code, identifiers, comments, commit messages, branch names,
+  pull requests, issues, this README
+- **German:** the documents under `docs/`, and day-to-day conversation
+
+## Content and licence
+
+Private project. Third-party content is **not** stored or reproduced in full —
+only metadata, short snippets and original AI summaries, always with a link and
+attribution. See [`docs/02-quellen.md`](docs/02-quellen.md#rechtliches).
