@@ -1,0 +1,61 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/releases
+
+# Build-Output
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+
+# Environment — NIEMALS committen
+.env
+.env.local
+.env.*.local
+.env.production
+!.env.example
+
+# Secrets & Keys
+*.pem
+*.key
+secrets/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+
+# Datenbank-Dumps & Backups
+*.dump
+*.sql.gz
+backups/
+
+# Blender — Arbeitsdateien versionieren, Renders nicht
+*.blend1
+*.blend2
+/assets/renders/
+
+# macOS
+.DS_Store
+.AppleDouble
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+
+# Test & Coverage
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# Lokale Claude-Konfiguration (settings.json wird geteilt, .local nicht)
+.claude/settings.local.json
