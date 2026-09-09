@@ -163,6 +163,7 @@ docker compose -f infra/docker-compose.dev.yml up -d   # Postgres + Redis
 
 ## Open items
 
-- [ ] Apply for Reddit API access (2–4 week wait) — **blocks phase 1**
+- [ ] Reddit API approval — applied 2026-09-09, pending. Gates only the
+      Reddit collector, not phase 1 as a whole.
 - [ ] Decide typography direction A or B (`docs/04-design.md`)
 - [ ] Register a domain

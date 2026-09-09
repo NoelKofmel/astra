@@ -13,7 +13,7 @@ the ordering matters more than the pace.
 **Goal:** an empty but fully deployable system. Nothing does anything useful
 yet, but everything is wired up.
 
-- [ ] **Apply for Reddit API access** ← first, approval takes 2–4 weeks
+- [x] **Reddit API access applied for** (2026-09-09) — approval pending, 2–4 weeks
 - [ ] Monorepo: pnpm workspaces + Turborepo, TypeScript `strict`
 - [ ] `docker-compose.dev.yml` — Postgres 17 + pgvector, Redis
 - [ ] Drizzle schema + first migration (every table from `01-architecture.md`)
@@ -224,12 +224,12 @@ Phase 0 ──▶ Phase 1 ──▶ Phase 2 ──▶ Phase 3 ──▶ Phase 4 
              └─▶ Phase 1b (parallel)               ├─▶ Phase 5 (design)
                                                    ├─▶ Phase 6 (personalisation)
    Reddit approval ····························▶   └─▶ Phase 7 (push)
-   (2–4 weeks wait, blocks nothing)                        │
+   (applied 2026-09-09, blocks nothing)                    │
                                                      Phase 8 (operations)
 ```
 
-The only external blocker is Reddit approval — and it is harmless if the
-application goes out during phase 0. Everything else depends only on you.
+The only external blocker is Reddit approval, filed on 2026-09-09. It gates
+nothing but the Reddit collector itself. Everything else depends only on you.
 
 **Realistic total to phase 4 (usable): 6–7 weeks.**
 **To phase 8 (rounded and polished): 12–14 weeks.**

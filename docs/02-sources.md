@@ -14,15 +14,15 @@ rules before building each collector.
 | Bluesky (Jetstream) | none | free | **stream** | P1 | volume, reconnects |
 | Hugging Face | optional | free | poll | P2 | none |
 | Product Hunt | OAuth | free | poll | P2 | quota |
-| Reddit | OAuth | free (non-commercial) | poll | P1 | **approval takes 2–4 weeks** |
+| Reddit | OAuth | free (non-commercial) | poll | P1 | **approval pending since 2026-09-09** |
 | Lobsters | none | free | poll | P3 | small |
 | ~~X/Twitter~~ | OAuth | **~$0.005/post** | — | **dropped** | cost (ADR-004) |
 
-> ⚠️ **Do this first:** apply for Reddit API access. Since the Responsible
-> Builder Policy (late 2025) there is no self-service registration — every new
-> OAuth client goes through manual approval, typically 2–4 weeks. This is the
-> only item in the entire plan with an external wait. File it during phase 0 and
-> approval arrives before phase 1 needs it.
+> **Reddit access: applied for on 2026-09-09, approval pending.** Since the
+> Responsible Builder Policy (late 2025) there is no self-service registration —
+> every new OAuth client goes through manual approval, typically 2–4 weeks. This
+> is the only item in the plan with an external wait, and it blocks nothing but
+> the Reddit collector itself.
 
 ---
 
@@ -87,12 +87,9 @@ commercial use costs $0.24 per 1000 calls and requires a negotiated contract.
 Astra is private and stays that way — if it ever turns commercial, the Reddit
 collector is the first thing to switch off.
 
-> **Applying:** describe the use case as non-commercial and single-user, give a
-> concrete request volume (12 subreddits × 2 endpoints every 20 minutes ≈ 1.2
-> requests/minute, ~1% of the limit), state that content is not republished, and
-> that every story links back to the original thread. Vague applications get
-> rejected. Phrase the subreddit list as "approximately 12 subreddits,
-> currently: …" so adding one later is not a scope change.
+> **Before the collector goes live:** check this subreddit list against the one
+> actually named in the approved application, and keep the polling volume inside
+> the declared scope.
 
 ### Bluesky (Jetstream)
 
