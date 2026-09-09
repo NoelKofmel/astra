@@ -12,7 +12,7 @@
 > impractical while building gets changed — experience with a running system
 > beats any plan on paper. Changes flow back into the relevant document; larger
 > shifts in direction get an entry in the
-> [decision log](docs/06-entscheidungen.md).
+> [decision log](docs/06-decisions.md).
 
 ## The problem
 
@@ -38,16 +38,14 @@ clustering for free.
 
 ## Documentation
 
-Written in German; see [Language](#language) below.
-
 | Document | Contents |
 |---|---|
-| [`docs/01-architektur.md`](docs/01-architektur.md) | Pipeline, services, data model, deployment |
-| [`docs/02-quellen.md`](docs/02-quellen.md) | Source catalogue, APIs, rate limits, legal |
-| [`docs/03-ranking-und-ki.md`](docs/03-ranking-und-ki.md) | Clustering, LLM usage, scoring, cost model |
+| [`docs/01-architecture.md`](docs/01-architecture.md) | Pipeline, services, data model, deployment |
+| [`docs/02-sources.md`](docs/02-sources.md) | Source catalogue, APIs, rate limits, legal |
+| [`docs/03-ranking-and-ai.md`](docs/03-ranking-and-ai.md) | Clustering, LLM usage, scoring, cost model |
 | [`docs/04-design.md`](docs/04-design.md) | Design system, globe, layout |
 | [`docs/05-roadmap.md`](docs/05-roadmap.md) | Phased plan with definition of done |
-| [`docs/06-entscheidungen.md`](docs/06-entscheidungen.md) | Decision log (ADRs) |
+| [`docs/06-decisions.md`](docs/06-decisions.md) | Decision log (ADRs) |
 | [`CLAUDE.md`](CLAUDE.md) | Project context for Claude Code sessions |
 
 ## At a glance
@@ -68,12 +66,11 @@ Anthropic API · Voyage AI embeddings
 
 ## Language
 
-- **English:** code, identifiers, comments, commit messages, branch names,
-  pull requests, issues, this README
-- **German:** the documents under `docs/`, and day-to-day conversation
+Everything in this repository is English — code, comments, commits, branches,
+pull requests and documentation. Day-to-day conversation and UI text are German.
 
 ## Content and licence
 
 Private project. Third-party content is **not** stored or reproduced in full —
 only metadata, short snippets and original AI summaries, always with a link and
-attribution. See [`docs/02-quellen.md`](docs/02-quellen.md#rechtliches).
+attribution. See [`docs/02-sources.md`](docs/02-sources.md#legal).

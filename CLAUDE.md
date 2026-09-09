@@ -1,62 +1,57 @@
-# CLAUDE.md — Projektkontext
+# CLAUDE.md — project context
 
-Kontext für Claude-Code-Sessions in diesem Repo. Kurz halten und aktuell halten —
-diese Datei wird bei jeder Session geladen.
+Context for Claude Code sessions in this repository. Keep it short and keep it
+current — this file loads into every session.
 
-## Was ist Astra
+## What Astra is
 
-Personalisierter Tech-News-Aggregator. Sammelt aus vielen Quellen, **clustert
-Duplikate zu Storys**, reichert sie mit Claude an, rankt personalisiert und
-pusht Relevantes per Telegram.
+A personalised tech news aggregator. Pulls from many sources, **clusters
+duplicates into stories**, enriches them with Claude, ranks them personally and
+pushes what matters over Telegram.
 
-Die zentrale Idee: Die Einheit ist die **Story**, nicht der Post. Ein Ereignis
-erzeugt 30 Posts auf 6 Plattformen — daraus wird eine Karte mit 30 Belegen.
-Dass eine Story mehrfach unabhängig auftaucht, ist gleichzeitig das stärkste
-Relevanzsignal.
+The central idea: the unit is the **story**, not the post. One event produces 30
+posts across 6 platforms — that becomes one card with 30 pieces of evidence. And
+the fact that a story surfaces independently in several places is simultaneously
+the strongest relevance signal available.
 
-**Nutzer:** Noel (Informatiker, DevOps Engineer, Schweiz). Ein Profil, 1–2
-Lesegäste. Kommunikation auf Deutsch, Schweizer Rechtschreibung (`ss`, kein `ß`).
+**User:** Noel (software engineer, DevOps engineer, Switzerland). One profile,
+one or two reading guests.
 
 ## Status
 
-**Planungsphase abgeschlossen. Noch kein Anwendungscode.** Als Nächstes: Roadmap
-Phase 0 (`docs/05-roadmap.md`).
+**Planning complete. No application code yet.** Next up: roadmap phase 0
+(`docs/05-roadmap.md`).
 
-## Sprache — verbindlich
+## Language — binding
 
-| Wo | Sprache |
+| Where | Language |
 |---|---|
-| Commit-Messages, Branch-Namen, PRs, Issues | **Englisch** |
-| Code, Bezeichner, Kommentare, Log-Ausgaben | **Englisch** |
-| `README.md` | **Englisch** |
-| Fehlermeldungen und UI-Texte für Noel | Deutsch |
-| Dokumente unter `docs/` | Deutsch |
-| Gespräch mit Noel | **immer Deutsch** |
+| Everything in the repository | **English** |
+| Code, identifiers, comments, log output | **English** |
+| Commit messages, branch names, PRs, issues | **English** |
+| Documents under `docs/`, this file, README | **English** |
+| UI text and error messages shown to Noel | German |
+| **Conversation with Noel** | **always German** |
 
-Commit-Messages im Imperativ, englisch, ohne Punkt am Ende:
-`Add Bluesky Jetstream collector`, nicht `Added...` oder `Bluesky-Collector
-hinzugefügt`. Body bei Bedarf, erklärt **warum**, nicht was — das steht im Diff.
+Commit messages in the imperative, no trailing period: `Add Bluesky Jetstream
+collector`, not `Added…`. Add a body when it helps, explaining **why** rather
+than what — the what is in the diff.
 
-Schweizer Rechtschreibung in allem Deutschen: `ss` statt `ß`.
+Swiss orthography in any German text: `ss`, never `ß`.
 
-> Offen: ob `docs/` und `CLAUDE.md` ebenfalls auf Englisch wechseln. Argument
-> dafür: der Code ist ohnehin englisch, gemischte Repos driften auseinander, und
-> das Repo ist öffentlich. Entscheidung steht aus — bis dahin gilt die Tabelle
-> oben.
+## Read the docs first
 
-## Dokumentation zuerst lesen
-
-| Frage | Dokument |
+| Question | Document |
 |---|---|
-| Wie ist das System aufgebaut? | `docs/01-architektur.md` |
-| Welche Quelle, welche API, welche Limits? | `docs/02-quellen.md` |
-| Wie funktionieren Clustering/KI/Ranking? | `docs/03-ranking-und-ki.md` |
-| Farben, Fonts, Globus, Layout? | `docs/04-design.md` |
-| Was ist als Nächstes dran? | `docs/05-roadmap.md` |
-| Warum ist X so entschieden? | `docs/06-entscheidungen.md` |
+| How is the system put together? | `docs/01-architecture.md` |
+| Which source, which API, which limits? | `docs/02-sources.md` |
+| How do clustering / AI / ranking work? | `docs/03-ranking-and-ai.md` |
+| Colours, fonts, globe, layout? | `docs/04-design.md` |
+| What comes next? | `docs/05-roadmap.md` |
+| Why is X the way it is? | `docs/06-decisions.md` |
 
-Bei Architekturfragen: **immer erst das ADR-Log prüfen.** Vieles ist bereits
-entschieden und begründet.
+For architectural questions: **always check the ADR log first.** A lot is
+already decided and reasoned through.
 
 ## Stack
 
@@ -64,115 +59,110 @@ Next.js 16 (App Router) · React 19 · TypeScript `strict` · Tailwind CSS v4 ·
 Drizzle ORM · Postgres 17 + pgvector + pg_trgm · Redis + BullMQ ·
 react-three-fiber · Zod · Vitest + Playwright
 
-Monorepo: pnpm Workspaces + Turborepo.
+Monorepo: pnpm workspaces + Turborepo.
 `apps/web`, `apps/worker`, `packages/{db,core,ai,ui}`, `infra/`
 
 Deployment: Hetzner CX32 · Docker Compose · Caddy · GitHub Actions → GHCR → SSH
 
-## Claude-API — Regeln für dieses Projekt
+## Claude API — rules for this project
 
-**Modelle nach Aufgabe:**
+**Models by task:**
 
-| Aufgabe | Modell | Warum |
+| Task | Model | Why |
 |---|---|---|
-| Triage aller Storys | `claude-haiku-4-5` | Volumen, billig |
-| Zusammenfassung Top-Storys | `claude-sonnet-5` | Qualität pro Franken |
-| Deep Dive auf Klick | `claude-opus-5` | selten, darf teuer sein |
+| Triage every story | `claude-haiku-4-5` | volume, cheap |
+| Summarise top stories | `claude-sonnet-5` | quality per franc |
+| Deep dive on click | `claude-opus-5` | rare, allowed to be expensive |
 
-**Immer beachten** (sonst 400-Fehler oder stille Kostenfallen):
+**Always observe** (otherwise: 400s or silent cost traps):
 
-- **Batch API** für alles Nicht-Latenzkritische → 50% Rabatt. Ergebnisse kommen
-  in beliebiger Reihenfolge zurück → **immer über `custom_id` zuordnen**, nie
-  über die Position.
-- **`output_config: { format: … }`** für strukturierte Ausgaben.
-  Nicht das veraltete `output_format`.
-- **Kein `temperature` / `top_p` / `top_k`** auf Opus 5 und Sonnet 5 → 400.
-  Steuerung über Prompt und `output_config.effort`.
-- **Kein Assistant-Prefill** → 400.
-- **Opus 5 denkt standardmässig.** `thinking: {type:"disabled"}` nur bis
-  `effort: "high"`, darüber 400.
-- **Prompt-Caching-Minimum:** Opus 5 = 512 Tokens, Sonnet 5 = 1024,
-  **Haiku 4.5 = 4096**. Ein kurzer Haiku-Prompt cached nicht — kein Fehler, nur
+- **Batch API** for anything not latency-critical → 50% discount. Results come
+  back **in arbitrary order** → always map by `custom_id`, never by position.
+- **`output_config: { format: … }`** for structured output. Not the deprecated
+  `output_format`.
+- **No `temperature` / `top_p` / `top_k`** on Opus 5 or Sonnet 5 → 400. Steer
+  through the prompt and `output_config.effort`.
+- **No assistant prefill** → 400.
+- **Opus 5 thinks by default.** `thinking: {type:"disabled"}` only up to
+  `effort: "high"`; above that, 400.
+- **Prompt cache minimums:** Opus 5 = 512 tokens, Sonnet 5 = 1024,
+  **Haiku 4.5 = 4096**. A short Haiku prompt will not cache — no error, just
   `cache_creation_input_tokens: 0`.
-- **Modell-IDs exakt** wie oben, ohne Datums-Suffix.
-- **Jeder Aufruf schreibt `cost_usd`** in `job_runs`. Kein API-Call ohne
-  Kostenerfassung.
+- **Model IDs exactly** as above, no date suffix.
+- **Every call writes `cost_usd`** into `job_runs`. No API call without cost
+  capture.
 
-Embeddings kommen **nicht** von Anthropic → Voyage AI `voyage-3.5-lite` hinter
-dem `EmbeddingProvider`-Interface.
+Embeddings do **not** come from Anthropic → Voyage AI `voyage-3.5-lite` behind
+the `EmbeddingProvider` interface.
 
-## Konventionen
+## Conventions
 
 **TypeScript**
-- `strict: true`, kein `any`. Bei echter Unsicherheit `unknown` + Zod-Parse.
-- Externe Daten (API-Antworten, Feeds, Webhooks) werden **immer** durch ein
-  Zod-Schema geparst. Kein `as SomeType` auf Fremddaten.
-- Typen aus dem Drizzle-Schema ableiten, nicht parallel definieren.
+- `strict: true`, no `any`. Where genuinely uncertain: `unknown` + a Zod parse.
+- External data (API responses, feeds, webhooks) is **always** parsed through a
+  Zod schema. Never `as SomeType` on foreign data.
+- Derive types from the Drizzle schema; do not define them in parallel.
 
-**Datenbank**
-- Migrationen **additiv**. Spalte hinzufügen ja, umbenennen/löschen nur in einem
-  eigenen, bewusst geplanten Schritt — sonst überlebt kein Rollback.
-- Jede Query, die im Feed-Pfad läuft, braucht einen Index. Bei Unsicherheit
-  `EXPLAIN ANALYZE` laufen lassen.
+**Database**
+- Migrations are **additive**. Adding a column yes; renaming or dropping only as
+  a separate, deliberately planned step — otherwise no rollback survives.
+- Every query on the feed path needs an index. When unsure, run
+  `EXPLAIN ANALYZE`.
 
 **Collectors**
-- Ein Adapter pro Quelle hinter dem `Collector`-Interface. Nichts ausserhalb des
-  Adapters darf quellenspezifisch sein.
-- Rate Limits respektieren. `User-Agent` mit Kontaktmöglichkeit setzen.
-- Fehler in einer Quelle dürfen andere nie beeinträchtigen (Circuit Breaker).
-- **Kein Volltext von Fremdartikeln speichern** — Snippet ≤ 500 Zeichen plus
-  Link. Siehe `docs/02-quellen.md#rechtliches`.
+- One adapter per source behind the `Collector` interface. Nothing outside the
+  adapter may be source-specific.
+- Respect rate limits. Set a `User-Agent` with a contact address.
+- A failure in one source must never affect the others (circuit breaker).
+- **Do not store full text of third-party articles** — a snippet of ≤ 500
+  characters plus a link. See `docs/02-sources.md#legal`.
 
 **Frontend**
-- Server Components als Standard, `"use client"` nur wo nötig.
-- Design-Tokens aus `@theme` verwenden, **nie** Farbwerte hart schreiben.
-- Alle Animationen respektieren `prefers-reduced-motion`.
-- Der 3D-Globus wird auf Mobil **nicht geladen** (dynamischer Import hinter
-  Breakpoint-Prüfung), nicht nur versteckt.
+- Server Components by default, `"use client"` only where needed.
+- Use design tokens from `@theme`; **never** hardcode colour values.
+- All animation respects `prefers-reduced-motion`.
+- The 3D globe is **not loaded** on mobile (dynamic import behind a breakpoint
+  check), not merely hidden.
 
 **Tests**
-- Reine Logik (Scoring, Clustering, URL-Kanonisierung): Vitest, hohe Abdeckung.
-- Die Clustering-Schwellenwerte haben einen **Regressionstest** auf dem
-  gelabelten Datensatz. Nicht ohne erneute Messung ändern.
-- Kritische Flows: Playwright.
+- Pure logic (scoring, clustering, URL canonicalisation): Vitest, high coverage.
+- The clustering thresholds have a **regression test** on the labelled dataset.
+  Do not change them without re-measuring.
+- Critical flows: Playwright.
 
-## Befehle
+## Commands
 
-*(werden in Phase 0 eingerichtet — hier eintragen, sobald vorhanden)*
+*(set up in phase 0 — record them here once they exist)*
 
 ```bash
-pnpm dev            # Web + Worker lokal
-pnpm db:migrate     # Migrationen anwenden
+pnpm dev            # web + worker locally
+pnpm db:migrate     # apply migrations
 pnpm db:studio      # Drizzle Studio
 pnpm test           # Vitest
 pnpm lint && pnpm typecheck
 docker compose -f infra/docker-compose.dev.yml up -d   # Postgres + Redis
 ```
 
-## Arbeitsweise
+## How to work here
 
-- **Die Docs sind ein Leitfaden, keine Anleitung.** Sie halten Richtung und
-  Begründungen fest, damit man nicht dreimal dasselbe entscheidet — nicht, um
-  die Umsetzung vorzuschreiben. Vieles darin ist ein *Vorschlag*, der sich beim
-  Bauen als unpraktisch, zu aufwendig oder schlicht falsch herausstellen kann.
-  Dann gilt: **Noels Urteil am laufenden System schlägt jedes Dokument.**
-  Abweichen ist normal und braucht keine Rechtfertigung — nur eine Notiz im
-  betroffenen Dokument, damit es nicht auseinanderdriftet.
-- **Detail entsteht beim Bauen.** Feinheiten werden festgelegt, *wenn* die
-  jeweilige Phase drankommt, nicht auf Vorrat. Neue Features oder Erkenntnisse
-  unterwegs: direkt ins passende Dokument, nicht in einem Chat versanden lassen.
-  Grössere Richtungswechsel bekommen einen ADR.
-- **Roadmap-Phasen der Reihe nach.** Die Reihenfolge ist bewusst gewählt:
-  benutzbarer Feed (Phase 4) *vor* Design (Phase 5).
-- Bei Architekturentscheidungen: neuen ADR in `docs/06-entscheidungen.md`
-  anlegen, nicht still im Code entscheiden.
-- Kosten sind ein Feature. Bei jeder KI-Änderung mitdenken, was sie pro Monat
-  kostet.
-- Keine Secrets ins Repo. `.env` ist ignoriert, `.env.example` gepflegt.
+- **The docs are a guide, not a manual.** They record direction and reasoning so
+  the same decision does not get made three times — not to prescribe the
+  implementation. Much of it is a *proposal* that may turn out impractical, too
+  expensive or simply wrong once building starts. When that happens:
+  **Noel's judgement on the running system beats any document.** Deviating is
+  normal and needs no justification — only a note in the affected document, so
+  things do not drift apart.
+- **Detail emerges while building.** Specifics get decided *when* the relevant
+  phase comes up, not in advance. New features or insights along the way go
+  straight into the right document rather than getting lost in a chat. Larger
+  shifts in direction get an ADR.
+- **Roadmap phases in order.** The ordering is deliberate: a usable feed
+  (phase 4) *before* design (phase 5).
+- Cost is a feature. With every AI change, think about what it costs per month.
+- No secrets in the repository. `.env` is ignored, `.env.example` is maintained.
 
-## Offene Punkte
+## Open items
 
-- [ ] Reddit-API-Freigabe beantragen (2–4 Wochen Wartezeit) — **blockiert Phase 1**
-- [ ] Screenshots der TikTok-Design-Referenzen von Noel
-- [ ] Typografie-Richtung A oder B entscheiden (`docs/04-design.md`)
-- [ ] Domain registrieren
+- [ ] Apply for Reddit API access (2–4 week wait) — **blocks phase 1**
+- [ ] Decide typography direction A or B (`docs/04-design.md`)
+- [ ] Register a domain

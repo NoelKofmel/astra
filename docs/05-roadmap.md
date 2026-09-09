@@ -1,251 +1,251 @@
 # Roadmap
 
-Neun Phasen. Jede hat eine **Definition of Done**, die man ohne Diskussion
-prüfen kann — das ist der Unterschied zwischen einem Plan und einer Wunschliste.
+Nine phases. Each has a **definition of done** you can check without argument —
+that is the difference between a plan and a wish list.
 
-Zeitangaben gehen von Feierabend- und Wochenendarbeit aus. Sie sind Schätzungen,
-keine Zusagen; die Reihenfolge ist wichtiger als das Tempo.
+Timings assume evening and weekend work. They are estimates, not commitments;
+the ordering matters more than the pace.
 
 ---
 
-## Phase 0 — Fundament · ~1 Woche
+## Phase 0 — Foundation · ~1 week
 
-**Ziel:** Ein leeres, aber vollständig deploybares System. Nichts tut etwas
-Nützliches, aber alles ist verkabelt.
+**Goal:** an empty but fully deployable system. Nothing does anything useful
+yet, but everything is wired up.
 
-- [ ] **Reddit-API-Zugang beantragen** ← zuerst, Freigabe dauert 2–4 Wochen
-- [ ] Monorepo: pnpm Workspaces + Turborepo, TypeScript `strict`
+- [ ] **Apply for Reddit API access** ← first, approval takes 2–4 weeks
+- [ ] Monorepo: pnpm workspaces + Turborepo, TypeScript `strict`
 - [ ] `docker-compose.dev.yml` — Postgres 17 + pgvector, Redis
-- [ ] Drizzle-Schema + erste Migration (alle Tabellen aus `01-architektur.md`)
-- [ ] Next.js-Grundgerüst mit Healthcheck-Route
-- [ ] Worker-Grundgerüst mit BullMQ und einem Dummy-Job
+- [ ] Drizzle schema + first migration (every table from `01-architecture.md`)
+- [ ] Next.js skeleton with a healthcheck route
+- [ ] Worker skeleton with BullMQ and one dummy job
 - [ ] GitHub Actions: lint → typecheck → test → build
-- [ ] Hetzner CX32 aufsetzen, **Server härten** (SSH-Key-only, UFW, fail2ban,
-      unattended-upgrades)
-- [ ] Domain + Caddy mit automatischem TLS
-- [ ] Deploy-Pipeline: GHCR-Image → SSH → `docker compose up -d`
-- [ ] Nächtliches `pg_dump` auf Storage Box
+- [ ] Provision the Hetzner CX32 and **harden it** (SSH keys only, UFW,
+      fail2ban, unattended-upgrades)
+- [ ] Domain + Caddy with automatic TLS
+- [ ] Deploy pipeline: GHCR image → SSH → `docker compose up -d`
+- [ ] Nightly `pg_dump` to the storage box
 
-**Done, wenn:** `git push` auf `main` deployt automatisch, und
-`https://<domain>/api/health` gibt `{ ok: true }` mit erreichbarer DB zurück.
+**Done when:** `git push` to `main` deploys automatically and
+`https://<domain>/api/health` returns `{ ok: true }` with the database
+reachable.
 
-> Diese Phase fühlt sich unproduktiv an, weil nichts Sichtbares entsteht. Sie ist
-> trotzdem die wichtigste: eine funktionierende Pipeline ab Tag 1 bedeutet, dass
-> jede spätere Änderung in Minuten live ist. Wer sie überspringt, deployt in
-> Woche 6 zum ersten Mal von Hand — und dann drei Tage lang.
+> This phase feels unproductive because nothing visible comes out of it. It is
+> still the most important one: a working pipeline from day one means every
+> later change is live in minutes. Skip it and you deploy manually for the first
+> time in week six — and then spend three days on it.
 
 ---
 
-## Phase 1 — Ingestion (Poll) · ~2 Wochen
+## Phase 1 — Ingestion (polling) · ~2 weeks
 
-**Ziel:** Daten fliessen rein.
+**Goal:** data flows in.
 
-- [ ] `Collector`-Interface + Registry
-- [ ] Normalisierer inkl. **URL-Kanonisierung** (Redirects, UTM, Fragmente)
+- [ ] `Collector` interface + registry
+- [ ] Normaliser including **URL canonicalisation** (redirects, UTM, fragments)
 - [ ] Collector: Hacker News (Algolia)
-- [ ] Collector: RSS (~20 Feeds, mit ETag/Last-Modified)
+- [ ] Collector: RSS (~20 feeds, with ETag/Last-Modified)
 - [ ] Collector: GitHub (Search API)
 - [ ] Collector: arXiv
-- [ ] Collector: Reddit *(sobald Freigabe da)*
-- [ ] BullMQ-Scheduler mit Cron pro Quelle
-- [ ] Fehlerbehandlung: Retry mit Backoff, Circuit Breaker pro Quelle
-- [ ] Admin-Ansicht: "was kam rein" — roh, hässlich, aber vorhanden
-- [ ] `job_runs`-Telemetrie für jeden Lauf
+- [ ] Collector: Reddit *(once approved)*
+- [ ] BullMQ scheduler with per-source cron
+- [ ] Error handling: retry with backoff, circuit breaker per source
+- [ ] Admin view: "what came in" — raw, ugly, but present
+- [ ] `job_runs` telemetry for every run
 
-**Done, wenn:** Nach 24 Stunden liegen > 1000 `raw_items` aus ≥ 4 Quellen in der
-DB, und eine kaputte Quelle beeinträchtigt die anderen nicht.
-
----
-
-## Phase 1b — Bluesky Firehose · ~1 Woche
-
-Getrennt, weil Streaming eine andere Betriebsklasse ist als Polling.
-
-- [ ] Jetstream-WebSocket-Client mit Reconnect-Backoff + Jitter
-- [ ] Cursor-Persistenz für nahtlosen Neustart
-- [ ] Zweistufiger Filter: `wantedDids` (~200 Accounts) + Keyword-Match
-- [ ] Backpressure: Redis-Puffer, Batch-Verarbeitung
-- [ ] Health-Check auf **letztes empfangenes Event**, nicht auf Socket-Status
-
-**Done, wenn:** Der Stream läuft 48 Stunden durch, übersteht einen erzwungenen
-Netzwerkabbruch selbstständig und verliert dabei keine Events.
+**Done when:** after 24 hours there are > 1000 `raw_items` from ≥ 4 sources in
+the database, and one broken source does not affect the others.
 
 ---
 
-## Phase 2 — Clustering · ~1.5 Wochen
+## Phase 1b — Bluesky firehose · ~1 week
 
-**Ziel:** Aus Posts werden Storys. Der technisch anspruchsvollste Teil.
+Separate, because streaming is a different operational class from polling.
 
-- [ ] Embedding-Provider-Interface + Voyage-Implementierung
-- [ ] pgvector-HNSW-Index
-- [ ] Stufe 1: exakter URL-Match
-- [ ] Stufe 2: `pg_trgm`-Titelähnlichkeit
-- [ ] Stufe 3: semantisches Clustering mit Schwellenwerten
-- [ ] Stufe 4: LLM-Schiedsrichter für die Grauzone (Haiku, Structured Output)
-- [ ] **Kalibrierung:** 100 Paare labeln, Precision/Recall messen, Schwellen
-      festlegen, als Regressionstest sichern
-- [ ] `match_method` und `confidence` in `story_items` protokollieren
+- [ ] Jetstream WebSocket client with reconnect backoff + jitter
+- [ ] Cursor persistence for seamless restarts
+- [ ] Two-stage filter: `wantedDids` (~200 accounts) + keyword match
+- [ ] Backpressure: Redis buffer, batch processing
+- [ ] Health check on the **last received event**, not on socket state
 
-**Done, wenn:** Auf dem gelabelten Set Recall ≥ 0.90 bei Precision ≥ 0.85, und
-eine reale Story mit ≥ 3 Quellen erscheint als **eine** Karte.
+**Done when:** the stream runs for 48 hours straight, survives a forced network
+drop on its own, and loses no events doing so.
 
 ---
 
-## Phase 3 — KI-Anreicherung · ~1.5 Wochen
+## Phase 2 — Clustering · ~1.5 weeks
 
-- [ ] Anthropic-Client-Wrapper mit Retry, Kostenerfassung, Structured Outputs
-- [ ] Triage-Prompt (Haiku 4.5) inkl. `geo`-Extraktion
-- [ ] Zusammenfassungs-Prompt (Sonnet 5): Kurzfassung, Erklärung, Kontext,
-      Widerspruch
-- [ ] Batch-API-Integration (Zuordnung strikt über `custom_id`)
-- [ ] Prompt-Caching prüfen (Achtung: Haiku braucht ≥ 4096 Tokens)
-- [ ] `cost_usd` pro Aufruf in `job_runs`
-- [ ] **Tages-Budget-Guard** mit automatischem Stopp + Telegram-Warnung
-- [ ] Prompt-Versionierung, damit Reprozessieren möglich bleibt
+**Goal:** posts become stories. The most demanding part technically.
 
-**Done, wenn:** Alle neuen Storys sind angereichert, die Tageskosten liegen unter
-$0.60, und der Guard hat sich in einem Testlauf nachweislich ausgelöst.
+- [ ] Embedding provider interface + Voyage implementation
+- [ ] pgvector HNSW index
+- [ ] Stage 1: exact URL match
+- [ ] Stage 2: `pg_trgm` title similarity
+- [ ] Stage 3: semantic clustering with thresholds
+- [ ] Stage 4: LLM adjudicator for the grey band (Haiku, structured output)
+- [ ] **Calibration:** label 100 pairs, measure precision/recall, fix thresholds,
+      lock in as a regression test
+- [ ] Record `match_method` and `confidence` in `story_items`
 
----
-
-## Phase 4 — Ranking & funktionierender Feed · ~1 Woche
-
-**Ziel:** Erstmals täglich benutzbar. Noch nicht schön — aber echt.
-
-- [ ] Regelbasiertes Scoring (5 Terme)
-- [ ] Quellen-Trust laufend berechnen
-- [ ] Feed-API mit Pagination
-- [ ] Minimale UI: Liste, Story-Detail, Themenfilter
-- [ ] Interaktions-Tracking (`impression`, `open`, `dwell`, `save`, `hide`)
-- [ ] GitHub OAuth mit Allowlist (du + 2 Freunde)
-
-**Done, wenn:** Du benutzt Astra eine Woche lang täglich statt HN — und der
-Feed ist danach immer noch sinnvoll sortiert.
-
-> Das ist der Meilenstein, der zählt. Ab hier arbeitest du an einem laufenden
-> System und nicht mehr an einer Idee. Alles Weitere ist Verbesserung.
+**Done when:** recall ≥ 0.90 at precision ≥ 0.85 on the labelled set, and a real
+story with ≥ 3 sources shows up as **one** card.
 
 ---
 
-## Phase 5 — Design · ~2 Wochen
+## Phase 3 — AI enrichment · ~1.5 weeks
 
-- [ ] Design-Tokens in Tailwind v4 `@theme`
-- [ ] Fonts selbst hosten, Typoskala
-- [ ] Komponentenbibliothek: StoryCard, Ticker, Chips, Empty States
-- [ ] Retro-Effektschicht (Scanlines, Glow, Boot) — abschaltbar
-- [ ] **Globus** in react-three-fiber: Drahtgitter → Punktwolke → Marker
-- [ ] Globus-Basisinteraktion: Ziehen, Trägheit, Autorotation
-- [ ] **Hover-Karte:** Leitlinie + Aufklapp-Animation, 120ms Verzögerung,
-      Kollisionserkennung am Viewport-Rand, Autorotation pausiert
-- [ ] **Marker-Klick** → Story-Panel fährt von rechts ein
-- [ ] Globus-Animationen: Einschlag-Welle, Verbindungsbögen, Dichte-Glühen,
-      Tag/Nacht-Grenze, Aufbau beim Laden
-- [ ] Tastaturbedienung des Globus (Tab durch Marker, Enter öffnet, `aria-label`)
-- [ ] **Ansichts-Umschalter** Globus ↔ Blog im Header, Wahl in `localStorage`,
-      3D-Bundle per dynamischem Import erst beim ersten Wechsel
-- [ ] Desktop-Dreispaltenlayout für beide Ansichten
-- [ ] Mobile: nur Blog-Ansicht, 3D gar nicht erst laden
-- [ ] Motion mit `prefers-reduced-motion`-Respekt
-- [ ] Lighthouse ≥ 90 auf Performance und Accessibility
+- [ ] Anthropic client wrapper with retry, cost capture, structured outputs
+- [ ] Triage prompt (Haiku 4.5) including `geo` extraction
+- [ ] Summary prompt (Sonnet 5): summary, explainer, context, disagreement
+- [ ] Batch API integration (map results strictly by `custom_id`)
+- [ ] Verify prompt caching (note: Haiku needs ≥ 4096 tokens)
+- [ ] `cost_usd` per call into `job_runs`
+- [ ] **Daily budget guard** with automatic stop + Telegram warning
+- [ ] Prompt versioning, so reprocessing stays possible
 
-**Done, wenn:** Du zeigst die Seite jemandem und die Reaktion ist "wo hast du
-das her" — und sie lädt trotzdem in unter 2 Sekunden.
-
-**Parallel:** Blender-Grundlagen an einem Detail-Asset (Satelliten-Loader).
+**Done when:** all new stories are enriched, daily cost is under $0.60, and the
+guard has demonstrably fired in a test run.
 
 ---
 
-## Phase 6 — Personalisierung · ~1.5 Wochen
+## Phase 4 — Ranking and a working feed · ~1 week
 
-- [ ] Profilvektor als EMA über gewichtete Interaktionen
-- [ ] Hybrides Scoring (60% Regel / 40% semantisch)
-- [ ] Exploration-Slot (5%), sichtbar markiert
-- [ ] LLM-Re-Ranking der Top 30 mit Warum-Zeile
-- [ ] Einstellungs-UI: Themengewichte, Stummschaltungen
-- [ ] "Weniger davon" auf der Story-Karte
+**Goal:** usable daily for the first time. Not pretty yet — but real.
 
-**Done, wenn:** Bei einem A/B-Vergleich über eine Woche liegt die Öffnungsrate
-der personalisierten Reihenfolge messbar über der rein regelbasierten.
+- [ ] Rule-based scoring (five terms)
+- [ ] Continuously computed source trust
+- [ ] Feed API with pagination
+- [ ] Minimal UI: list, story detail, topic filter
+- [ ] Interaction tracking (`impression`, `open`, `dwell`, `save`, `hide`)
+- [ ] GitHub OAuth with an allowlist (you + 2 friends)
 
----
+**Done when:** you use Astra daily for a week instead of HN — and the feed still
+makes sense afterwards.
 
-## Phase 7 — Benachrichtigungen · ~4 Tage
-
-- [ ] Telegram-Bot (BotFather, Webhook)
-- [ ] Regel-Engine: Schwellen, Ruhezeiten, Tageskontingent, Cluster-Dedup
-- [ ] Nachrichtenformat mit Inline-Buttons
-- [ ] `callback_query`-Handler → schreibt in `interactions`
-- [ ] Morgen-Digest um 07:30
-- [ ] Einstellungen: Schwellen und Ruhezeiten anpassbar
-
-**Done, wenn:** Eine Woche Betrieb ohne einen einzigen Push, den du im
-Nachhinein als überflüssig einstufst.
+> This is the milestone that counts. From here you are working on a running
+> system rather than an idea. Everything after this is improvement.
 
 ---
 
-## Phase 8 — Betrieb & Härtung · laufend
+## Phase 5 — Design · ~2 weeks
+
+- [ ] Design tokens in Tailwind v4 `@theme`
+- [ ] Self-host fonts, type scale
+- [ ] Component library: StoryCard, ticker, chips, empty states
+- [ ] CRT effect layer (scanlines, glow, boot) — switchable off
+- [ ] **Globe** in react-three-fiber: wireframe → point cloud → markers
+- [ ] Globe base interaction: drag, inertia, auto-rotation
+- [ ] **Hover card:** leader line + unfold animation, 120ms delay, viewport-edge
+      collision handling, auto-rotation pauses
+- [ ] **Marker click** → story panel slides in from the right
+- [ ] Globe animations: impact ripple, connection arcs, density glow, day/night
+      terminator, assembly on load
+- [ ] Keyboard operation of the globe (Tab through markers, Enter opens,
+      `aria-label`)
+- [ ] **View switch** globe ↔ blog in the header, choice in `localStorage`, 3D
+      bundle by dynamic import on first switch only
+- [ ] Three-column desktop layout for both views
+- [ ] Mobile: blog view only, 3D never loaded
+- [ ] Motion respecting `prefers-reduced-motion`
+- [ ] Lighthouse ≥ 90 on performance and accessibility
+
+**Done when:** you show someone the site and the reaction is "where did you get
+that" — and it still loads in under two seconds.
+
+**In parallel:** Blender basics on a detail asset (satellite loader).
+
+---
+
+## Phase 6 — Personalisation · ~1.5 weeks
+
+- [ ] Profile vector as an EMA over weighted interactions
+- [ ] Hybrid scoring (60% rules / 40% semantic)
+- [ ] Exploration slot (5%), visibly marked
+- [ ] LLM re-ranking of the top 30 with a why-line
+- [ ] Settings UI: topic weights, mutes
+- [ ] "Less like this" on the story card
+
+**Done when:** across a week of A/B comparison, the open rate on the
+personalised ordering measurably beats the purely rule-based one.
+
+---
+
+## Phase 7 — Notifications · ~4 days
+
+- [ ] Telegram bot (BotFather, webhook)
+- [ ] Rules engine: thresholds, quiet hours, daily quota, cluster dedup
+- [ ] Message format with inline buttons
+- [ ] `callback_query` handler → writes into `interactions`
+- [ ] Morning digest at 07:30
+- [ ] Settings: adjustable thresholds and quiet hours
+
+**Done when:** a week of operation without a single push you would afterwards
+call unnecessary.
+
+---
+
+## Phase 8 — Operations and hardening · ongoing
 
 - [ ] Grafana + Loki + Promtail
-- [ ] Dashboards: Pipeline-Durchsatz, Kosten, Quellen-Gesundheit, Fehlerrate
-- [ ] Alarmierung bei stillem Collector-Ausfall (die gefährlichste Fehlerart:
-      alles läuft, nur es kommt nichts mehr rein)
-- [ ] **Restore-Test** — Backup auf einem frischen Container zurückspielen
-- [ ] Rate-Limiting an der API
-- [ ] Sicherheits-Review: Dependencies, Secrets, Header
-- [ ] Lasttest der Pipeline
+- [ ] Dashboards: pipeline throughput, cost, source health, error rate
+- [ ] Alerting on silent collector failure (the most dangerous failure mode:
+      everything runs, nothing arrives)
+- [ ] **Restore test** — replay a backup onto a fresh container
+- [ ] Rate limiting on the API
+- [ ] Security review: dependencies, secrets, headers
+- [ ] Load test of the pipeline
 
-**Done, wenn:** Ein absichtlich abgeschalteter Collector löst binnen 30 Minuten
-einen Alarm aus, und ein Backup wurde nachweislich einmal zurückgespielt.
-
----
-
-## Phase 9 — Optional / Ausbau
-
-Nach Lust und Bedarf, in keiner festen Reihenfolge:
-
-- **k3s-Migration** als bewusste DevOps-Übung (ArgoCD, GitOps, Terraform)
-- **Lokale Embeddings** (`bge-m3` als ONNX-Service) — Unabhängigkeit statt 9 Cent
-- **X/Twitter-Adapter** — falls die Datenauswertung zeigt, dass Storys fehlen
-  (siehe ADR-004); mit hartem Spend-Cap
-- **Wöchentlicher Rückblick** — Opus 5 fasst die Woche in einem Essay zusammen
-- **PWA + Web Push** als Ergänzung zu Telegram
-- **Podcast-Modus** — TTS über den Morgen-Digest
-- **Öffentlicher Blog-Modus** — kuratierte Storys öffentlich, dann mit
-  Datenschutzerklärung
+**Done when:** a deliberately disabled collector triggers an alert within 30
+minutes, and a backup has demonstrably been restored once.
 
 ---
 
-## Kritischer Pfad
+## Phase 9 — Optional / expansion
+
+As the mood and need take you, in no fixed order:
+
+- **k3s migration** as a deliberate DevOps exercise (ArgoCD, GitOps, Terraform)
+- **Local embeddings** (`bge-m3` as an ONNX service) — independence rather than
+  nine cents
+- **X/Twitter adapter** — if the data shows stories are being missed (see
+  ADR-004); with a hard spend cap
+- **Weekly review** — Opus 5 writes the week up as an essay
+- **PWA + web push** alongside Telegram
+- **Podcast mode** — TTS over the morning digest
+- **Public blog mode** — curated stories published, then with a privacy policy
+
+---
+
+## Critical path
 
 ```
-Phase 0 ──▶ Phase 1 ──▶ Phase 2 ──▶ Phase 3 ──▶ Phase 4 ✅ benutzbar
+Phase 0 ──▶ Phase 1 ──▶ Phase 2 ──▶ Phase 3 ──▶ Phase 4 ✅ usable
              │                                     │
-             └─▶ Phase 1b (parallel)               ├─▶ Phase 5 (Design)
-                                                   ├─▶ Phase 6 (Personalisierung)
-   Reddit-Freigabe ····························▶   └─▶ Phase 7 (Push)
-   (2–4 Wochen Wartezeit, blockiert nichts)                   │
-                                                       Phase 8 (Betrieb)
+             └─▶ Phase 1b (parallel)               ├─▶ Phase 5 (design)
+                                                   ├─▶ Phase 6 (personalisation)
+   Reddit approval ····························▶   └─▶ Phase 7 (push)
+   (2–4 weeks wait, blocks nothing)                        │
+                                                     Phase 8 (operations)
 ```
 
-Der einzige externe Blocker ist die Reddit-Freigabe — und der ist harmlos, wenn
-der Antrag in Phase 0 rausgeht. Alles andere hängt nur an dir.
+The only external blocker is Reddit approval — and it is harmless if the
+application goes out during phase 0. Everything else depends only on you.
 
-**Realistische Gesamtdauer bis Phase 4 (benutzbar): 6–7 Wochen.**
-**Bis Phase 8 (rund und schön): 12–14 Wochen.**
+**Realistic total to phase 4 (usable): 6–7 weeks.**
+**To phase 8 (rounded and polished): 12–14 weeks.**
 
-## Grösste Risiken
+## Biggest risks
 
-| Risiko | Wahrscheinlichkeit | Gegenmassnahme |
+| Risk | Likelihood | Mitigation |
 |---|---|---|
-| Clustering-Qualität enttäuscht | mittel | Kalibrierungsschritt in Phase 2 ist Pflicht, nicht optional |
-| Design frisst unbegrenzt Zeit | **hoch** | Phase 5 kommt bewusst *nach* dem funktionierenden Feed |
-| Reddit-Freigabe wird abgelehnt | niedrig | Die anderen Quellen tragen; nicht auf Reddit planen |
-| LLM-Kosten laufen davon | niedrig | Budget-Guard in Phase 3, vor dem Vollbetrieb |
-| Bluesky-Stream instabil | mittel | Phase 1b getrennt, Poll-Quellen laufen unabhängig weiter |
-| Motivation nach Phase 3 | **hoch** | Deshalb steht Phase 4 (benutzbar) vor Phase 5 (schön) |
+| Clustering quality disappoints | medium | The calibration step in phase 2 is mandatory, not optional |
+| Design consumes unbounded time | **high** | Phase 5 deliberately comes *after* a working feed |
+| Reddit approval refused | low | The other sources carry it; do not plan around Reddit |
+| LLM costs run away | low | Budget guard in phase 3, before full operation |
+| Bluesky stream unstable | medium | Phase 1b is separate; polling sources keep running independently |
+| Motivation after phase 3 | **high** | Which is why phase 4 (usable) comes before phase 5 (pretty) |
 
-Die letzten beiden Zeilen sind ernst gemeint. Die grösste Gefahr für ein
-Feierabendprojekt dieser Grösse ist nicht Technik, sondern der Punkt in Woche 4,
-an dem viel gebaut ist und noch nichts Freude macht. Deshalb ist die
-Phasenreihenfolge so gewählt, dass es einen benutzbaren Feed gibt, *bevor* das
-Design dran ist.
+The last two rows are meant seriously. The biggest danger to an evening project
+of this size is not technical, it is the point in week four where a lot is built
+and none of it is any fun yet. The phase ordering exists so that there is a
+usable feed *before* the design work starts.
