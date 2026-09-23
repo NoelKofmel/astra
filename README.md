@@ -30,7 +30,7 @@ A pipeline that condenses noise into **stories** rather than posts:
 Sources  →  Normalise  →  Cluster  →  AI enrichment  →  Rank  →  Feed + Push
 ```
 
-Clustering is the core. The HN thread, the Reddit post, the TechCrunch article
+Clustering is the core. The HN thread, the Lobsters post, the TechCrunch article
 and the Bluesky discussion about one event become **one** story backed by
 several pieces of evidence. And the fact that a story shows up in five places at
 once is itself the strongest relevance signal available — it falls out of the
@@ -52,8 +52,8 @@ clustering for free.
 
 - **Users:** one personalisation profile (Noel), read access for one or two friends
 - **Hosting:** Hetzner VPS, Docker Compose, GitHub Actions CI/CD
-- **Sources:** Hacker News, Reddit, RSS, GitHub, Bluesky, arXiv, Hugging Face,
-  Product Hunt — **no X/Twitter** (see ADR-004)
+- **Sources:** Hacker News, RSS, GitHub, Bluesky, arXiv, Hugging Face,
+  Product Hunt, Lobsters — **no X/Twitter** (ADR-004), **no Reddit** (ADR-013)
 - **AI:** Claude Haiku 4.5 (triage) → Sonnet 5 (summaries) → Opus 5 (deep dive)
 - **Push:** Telegram bot
 - **Budget:** ~20 CHF/month against a 25–30 CHF ceiling

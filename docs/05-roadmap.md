@@ -13,7 +13,6 @@ the ordering matters more than the pace.
 **Goal:** an empty but fully deployable system. Nothing does anything useful
 yet, but everything is wired up.
 
-- [x] **Reddit API access applied for** (2026-09-09) — approval pending, 2–4 weeks
 - [ ] Monorepo: pnpm workspaces + Turborepo, TypeScript `strict`
 - [ ] `docker-compose.dev.yml` — Postgres 17 + pgvector, Redis
 - [ ] Drizzle schema + first migration (every table from `01-architecture.md`)
@@ -47,7 +46,7 @@ reachable.
 - [ ] Collector: RSS (~20 feeds, with ETag/Last-Modified)
 - [ ] Collector: GitHub (Search API)
 - [ ] Collector: arXiv
-- [ ] Collector: Reddit *(once approved)*
+- [ ] Collector: Lobsters
 - [ ] BullMQ scheduler with per-source cron
 - [ ] Error handling: retry with backoff, circuit breaker per source
 - [ ] Admin view: "what came in" — raw, ugly, but present
@@ -223,13 +222,12 @@ Phase 0 ──▶ Phase 1 ──▶ Phase 2 ──▶ Phase 3 ──▶ Phase 4 
              │                                     │
              └─▶ Phase 1b (parallel)               ├─▶ Phase 5 (design)
                                                    ├─▶ Phase 6 (personalisation)
-   Reddit approval ····························▶   └─▶ Phase 7 (push)
-   (applied 2026-09-09, blocks nothing)                    │
+                                                   └─▶ Phase 7 (push)
+                                                           │
                                                      Phase 8 (operations)
 ```
 
-The only external blocker is Reddit approval, filed on 2026-09-09. It gates
-nothing but the Reddit collector itself. Everything else depends only on you.
+There are no external blockers. Everything depends only on you.
 
 **Realistic total to phase 4 (usable): 6–7 weeks.**
 **To phase 8 (rounded and polished): 12–14 weeks.**
@@ -240,7 +238,6 @@ nothing but the Reddit collector itself. Everything else depends only on you.
 |---|---|---|
 | Clustering quality disappoints | medium | The calibration step in phase 2 is mandatory, not optional |
 | Design consumes unbounded time | **high** | Phase 5 deliberately comes *after* a working feed |
-| Reddit approval refused | low | The other sources carry it; do not plan around Reddit |
 | LLM costs run away | low | Budget guard in phase 3, before full operation |
 | Bluesky stream unstable | medium | Phase 1b is separate; polling sources keep running independently |
 | Motivation after phase 3 | **high** | Which is why phase 4 (usable) comes before phase 5 (pretty) |

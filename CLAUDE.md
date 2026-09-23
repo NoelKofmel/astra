@@ -143,6 +143,17 @@ pnpm lint && pnpm typecheck
 docker compose -f infra/docker-compose.dev.yml up -d   # Postgres + Redis
 ```
 
+## MCP servers
+
+- `playwright` — project scope, in `.mcp.json`
+- `context7` — current library docs (Next.js 16, Tailwind v4, Drizzle move
+  fast); local config, not in the repo
+- `graphify` — code knowledge graph; local config, not in the repo. Pays off
+  once the codebase is large (phase 2–3 onward)
+
+Add servers when a concrete need exists, not in advance — every server costs
+context in every session.
+
 ## How to work here
 
 - **The docs are a guide, not a manual.** They record direction and reasoning so
@@ -163,7 +174,5 @@ docker compose -f infra/docker-compose.dev.yml up -d   # Postgres + Redis
 
 ## Open items
 
-- [ ] Reddit API approval — applied 2026-09-09, pending. Gates only the
-      Reddit collector, not phase 1 as a whole.
 - [ ] Decide typography direction A or B (`docs/04-design.md`)
 - [ ] Register a domain

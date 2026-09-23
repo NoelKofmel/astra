@@ -251,6 +251,31 @@ terminator.
 
 ---
 
+## ADR-013 — No Reddit
+
+**Status:** accepted · 2026-09-23
+
+**Context:** Reddit was planned as a P1 source for technical depth in the
+comments. Since the Responsible Builder Policy (late 2025) every new OAuth
+client needs manual approval. The application filed on 2026-09-09 was refused
+on 2026-09-23 as not compliant with the policy and/or lacking detail — no
+specific reason given.
+
+**Decision:** Reddit will not be implemented. No re-application, no scraping of
+the public JSON endpoints as a workaround — that would be exactly the use the
+policy is meant to stop.
+
+**Consequences:**
+- The critical path has no external blocker left
+- The loss is mostly the pushback in the comments, not the stories themselves —
+  these reach HN, Lobsters and Bluesky anyway
+- Lobsters moves from P3 to P1 to partly fill the gap
+- As with X (ADR-004), the `Collector` interface keeps the door open: should
+  access become possible later, Reddit is one adapter among many
+- **Testable:** the same source trust check from phase 4 applies
+
+---
+
 ## Template for new entries
 
 ```markdown

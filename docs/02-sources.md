@@ -14,15 +14,9 @@ rules before building each collector.
 | Bluesky (Jetstream) | none | free | **stream** | P1 | volume, reconnects |
 | Hugging Face | optional | free | poll | P2 | none |
 | Product Hunt | OAuth | free | poll | P2 | quota |
-| Reddit | OAuth | free (non-commercial) | poll | P1 | **approval pending since 2026-09-09** |
-| Lobsters | none | free | poll | P3 | small |
+| Lobsters | none | free | poll | P1 | small volume |
 | ~~X/Twitter~~ | OAuth | **~$0.005/post** | — | **dropped** | cost (ADR-004) |
-
-> **Reddit access: applied for on 2026-09-09, approval pending.** Since the
-> Responsible Builder Policy (late 2025) there is no self-service registration —
-> every new OAuth client goes through manual approval, typically 2–4 weeks. This
-> is the only item in the plan with an external wait, and it blocks nothing but
-> the Reddit collector itself.
+| ~~Reddit~~ | OAuth | free (non-commercial) | — | **dropped** | API access refused (ADR-013) |
 
 ---
 
@@ -69,28 +63,6 @@ Starting set (maintained in `sources.config`, extend at will):
 
 ## P1 — Breadth and depth
 
-### Reddit
-
-OAuth2 client credentials, via `snoowrap` or the REST API directly.
-
-- **Limit:** 100 requests/minute per OAuth client (averaged over ten minutes);
-  10/min unauthenticated
-- **Frequency:** every 20 minutes, `/r/{sub}/new` and `/r/{sub}/top?t=day`
-- **Subreddits:** `programming`, `MachineLearning`, `LocalLLaMA`, `devops`,
-  `kubernetes`, `sysadmin`, `netsec`, `selfhosted`, `webdev`, `ExperiencedDevs`,
-  `rust`, `hardware`
-- **Value:** technical depth in the comments, often pushing back against the
-  hype — exactly what a summary lacks and what makes one worth reading.
-
-**Take the commercial boundary seriously.** Non-commercial use is free;
-commercial use costs $0.24 per 1000 calls and requires a negotiated contract.
-Astra is private and stays that way — if it ever turns commercial, the Reddit
-collector is the first thing to switch off.
-
-> **Before the collector goes live:** check this subreddit list against the one
-> actually named in the approved application, and keep the polling volume inside
-> the declared scope.
-
 ### Bluesky (Jetstream)
 
 The most interesting collector technically. Do **not** consume the full AT
@@ -128,6 +100,18 @@ There is no official trending endpoint. Two workable routes:
 - **Value:** complements the news with what people are actually adopting. A tool
   that gains 3000 stars in a day is a story.
 
+### Lobsters
+
+JSON API, no key: `https://lobste.rs/hottest.json` and `/newest.json`, each
+story with `score`, `comment_count` and `tags`.
+
+- **Frequency:** every 30 minutes — the site is small, be gentle
+- **Yield:** ~20–40 stories/day
+- **Value:** high signal density and little overlap with HN. Raised from P3
+  after Reddit was dropped (ADR-013): its comment threads are the closest
+  replacement for the technical pushback Reddit was meant to provide. The tags
+  (`rust`, `devops`, `security`, …) are a free topic hint for triage.
+
 ### arXiv
 
 Atom API, no key. Categories `cs.AI`, `cs.LG`, `cs.CL`, `cs.CR`, `cs.SE`.
@@ -144,8 +128,6 @@ Courtesy rule: at most one request every three seconds.
 - **Hugging Face** — Daily Papers, new models gaining traction. Matches the
   original motivating example exactly.
 - **Product Hunt** — GraphQL, OAuth. New tools and launches.
-- **Lobsters** — `https://lobste.rs/hottest.json`. Small, but high signal
-  density and little overlap with HN.
 
 ---
 
@@ -160,8 +142,7 @@ one than to retrofit:
    That is also correct UX: the path to reading further must stay open.
 3. **Respect robots.txt and rate limits.** No scraping where an API exists. Set
    a `User-Agent` with a contact address.
-4. **Do not cross Reddit's commercial boundary** (see above).
-5. **If Astra ever goes public:** Swiss DSG means a privacy policy; an imprint is
+4. **If Astra ever goes public:** Swiss DSG means a privacy policy; an imprint is
    not mandatory for non-commercial operation but is better practice. At that
    point, also check whether the summaries still stand as independent works or
    sit too close to the original.

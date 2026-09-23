@@ -3,7 +3,7 @@
 ## The guiding idea
 
 Astra does not process posts. It processes **stories**. One event — say, Nvidia
-acquiring Hugging Face — produces an HN thread, three Reddit posts, two RSS
+acquiring Hugging Face — produces an HN thread, a Lobsters thread, two RSS
 articles and dozens of Bluesky posts within minutes. That is not 30 news items.
 It is one, with 30 pieces of evidence.
 
@@ -45,8 +45,8 @@ interface Collector {
 
 Two modes, because the sources differ fundamentally:
 
-- **poll** — a cron job through BullMQ. HN, Reddit, RSS, GitHub, arXiv, Hugging
-  Face, Product Hunt.
+- **poll** — a cron job through BullMQ. HN, RSS, GitHub, arXiv, Hugging Face,
+  Product Hunt, Lobsters.
 - **stream** — a long-lived WebSocket with reconnect backoff. Bluesky Jetstream.
   Needs stable infrastructure, so it lands after the polling collectors
   (roadmap phase 1b).
@@ -153,8 +153,8 @@ PostgreSQL 17 with `pgvector` (semantic search) and `pg_trgm` (title
 similarity).
 
 ### `sources`
-Registry of sources. Configuration lives in `config jsonb` (subreddit list, feed
-URLs, Bluesky filters). `enabled` acts as a feature flag; `health` and
+Registry of sources. Configuration lives in `config jsonb` (feed URLs, GitHub
+queries, Bluesky filters). `enabled` acts as a feature flag; `health` and
 `last_run_at` feed monitoring.
 
 ### `raw_items`

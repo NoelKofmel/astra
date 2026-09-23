@@ -8,7 +8,7 @@ what you see first.
 
 ## Clustering
 
-**The job:** recognise that an HN thread, two Reddit posts, a TechCrunch article
+**The job:** recognise that an HN thread, a Lobsters thread, a TechCrunch article
 and forty Bluesky posts are all about the same event.
 
 Three stages, cheapest first. Each catches what it can and passes the rest on.
@@ -17,7 +17,7 @@ That keeps the cost at a few cents a day.
 ### Stage 1 — Exact URL match (~40% of duplicates, free)
 
 After canonicalisation, a `canonical_url` match is a certain hit. This covers
-the most common case: the same article shared to HN, Reddit and Bluesky at once.
+the most common case: the same article shared to HN, Lobsters and Bluesky at once.
 
 ```sql
 SELECT story_id FROM story_items si
