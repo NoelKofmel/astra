@@ -106,13 +106,20 @@ worse than no notification at all.
 
 | Service | Image / base | Purpose |
 |---|---|---|
-| `web` | Node 22 · Next.js 16 | UI + API routes |
-| `worker` | Node 22 | Collectors, enrichment, clustering (BullMQ consumers) |
-| `scheduler` | Node 22 | Cron → BullMQ jobs (may run inside the worker) |
-| `postgres` | `pgvector/pgvector:pg17` | Everything persistent |
-| `redis` | `redis:7-alpine` | BullMQ queue + cache |
+| `web` | Node 24 · Next.js 16 | UI + API routes |
+| `worker` | Node 24 | Collectors, enrichment, clustering (BullMQ consumers) |
+| `scheduler` | Node 24 | Cron → BullMQ jobs (may run inside the worker) |
+| `postgres` | `pgvector/pgvector:0.8.6-pg18` | Everything persistent |
+| `redis` | `redis:8.10-alpine` | BullMQ queue + cache |
 | `caddy` | `caddy:2-alpine` | Reverse proxy, automatic TLS |
 | `grafana` + `loki` + `promtail` | — | Logs and dashboards (phase 8 onwards) |
+
+> Versions changed when phase 0 started (2026-09-23): Node 24 is the active
+> LTS, while 22 reaches end of life in April 2027. Postgres 18 instead of 17
+> buys a year more support (to 2030) and skips the first major upgrade. Redis 8
+> is the maintained line. BullMQ 6 could also run on Postgres instead of Redis,
+> but that backend was only two months old then; since the API is identical,
+> switching later is a small change.
 
 `web` and `worker` share code but run as separate containers. The reason is
 operational hygiene: a collector stuck in a retry loop because of a broken RSS
@@ -149,7 +156,7 @@ want to find out.
 
 ## Data model
 
-PostgreSQL 17 with `pgvector` (semantic search) and `pg_trgm` (title
+PostgreSQL 18 with `pgvector` (semantic search) and `pg_trgm` (title
 similarity).
 
 ### `sources`

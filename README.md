@@ -62,7 +62,7 @@ clustering for free.
 ## Stack
 
 Next.js 16 · React 19 · TypeScript · Tailwind CSS v4 · Drizzle ORM ·
-PostgreSQL 17 + pgvector · Redis + BullMQ · react-three-fiber ·
+PostgreSQL 18 + pgvector · Redis + BullMQ · react-three-fiber ·
 Anthropic API · Voyage AI embeddings
 
 ## Language

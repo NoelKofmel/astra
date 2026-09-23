@@ -14,7 +14,7 @@ the ordering matters more than the pace.
 yet, but everything is wired up.
 
 - [ ] Monorepo: pnpm workspaces + Turborepo, TypeScript `strict`
-- [ ] `docker-compose.dev.yml` — Postgres 17 + pgvector, Redis
+- [x] `docker-compose.dev.yml` — Postgres 18 + pgvector, Redis
 - [ ] Drizzle schema + first migration (every table from `01-architecture.md`)
 - [ ] Next.js skeleton with a healthcheck route
 - [ ] Worker skeleton with BullMQ and one dummy job

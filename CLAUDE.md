@@ -57,7 +57,7 @@ already decided and reasoned through.
 ## Stack
 
 Next.js 16 (App Router) · React 19 · TypeScript `strict` · Tailwind CSS v4 ·
-Drizzle ORM · Postgres 17 + pgvector + pg_trgm · Redis + BullMQ ·
+Drizzle ORM · Postgres 18 + pgvector + pg_trgm · Redis + BullMQ ·
 react-three-fiber · Zod · Vitest + Playwright
 
 Monorepo: pnpm workspaces + Turborepo.
