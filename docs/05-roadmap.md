@@ -19,6 +19,8 @@ yet, but everything is wired up.
 - [ ] Next.js skeleton with a healthcheck route
 - [ ] Worker skeleton with BullMQ and one dummy job
 - [ ] GitHub Actions: lint → typecheck → test → build
+- [ ] Settle the phase-0 conventions — logging, config, time/IDs, jobs
+      (`07-conventions.md`) — including the lint rules that enforce them
 - [ ] Provision the Hetzner CX32 and **harden it** (SSH keys only, UFW,
       fail2ban, unattended-upgrades)
 - [ ] Domain + Caddy with automatic TLS
@@ -147,6 +149,8 @@ makes sense afterwards.
 - [ ] Mobile: blog view only, 3D never loaded
 - [ ] Motion respecting `prefers-reduced-motion`
 - [ ] Lighthouse ≥ 90 on performance and accessibility
+- [ ] **README showcase:** hero screenshot or GIF of the globe, Mermaid
+      architecture diagram, quick start — the repo's front door
 
 **Done when:** you show someone the site and the reaction is "where did you get
 that" — and it still loads in under two seconds.

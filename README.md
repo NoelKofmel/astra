@@ -46,6 +46,7 @@ clustering for free.
 | [`docs/04-design.md`](docs/04-design.md) | Design system, globe, layout |
 | [`docs/05-roadmap.md`](docs/05-roadmap.md) | Phased plan with definition of done |
 | [`docs/06-decisions.md`](docs/06-decisions.md) | Decision log (ADRs) |
+| [`docs/07-conventions.md`](docs/07-conventions.md) | How cross-cutting concerns are done — one way each |
 | [`CLAUDE.md`](CLAUDE.md) | Project context for Claude Code sessions |
 
 ## At a glance

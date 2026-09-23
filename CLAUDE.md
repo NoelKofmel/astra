@@ -49,6 +49,7 @@ Swiss orthography in any German text: `ss`, never `ß`.
 | Colours, fonts, globe, layout? | `docs/04-design.md` |
 | What comes next? | `docs/05-roadmap.md` |
 | Why is X the way it is? | `docs/06-decisions.md` |
+| How do we log / configure / call HTTP / …? | `docs/07-conventions.md` |
 
 For architectural questions: **always check the ADR log first.** A lot is
 already decided and reasoned through.
@@ -167,6 +168,11 @@ context in every session.
   phase comes up, not in advance. New features or insights along the way go
   straight into the right document rather than getting lost in a chat. Larger
   shifts in direction get an ADR.
+- **One way per cross-cutting concern.** Logging, errors, config, HTTP, jobs,
+  AI calls: check `docs/07-conventions.md` before building one. The first
+  implementation settles the pattern and is recorded there in the same commit.
+  A wrong pattern gets changed and the code migrated — never a second way
+  alongside. Prefer enforcing a convention with a lint rule over a sentence.
 - **Roadmap phases in order.** The ordering is deliberate: a usable feed
   (phase 4) *before* design (phase 5).
 - Cost is a feature. With every AI change, think about what it costs per month.
