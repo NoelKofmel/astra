@@ -1,0 +1,6 @@
+# Hand-wrapped prose; reformatting would only churn the diffs
+**/*.md
+
+# Generated
+pnpm-lock.yaml
+packages/db/drizzle/

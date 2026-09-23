@@ -35,7 +35,8 @@ collectors, frontend, tests) and are not repeated here.
 
 | Concern | Status | Settle in | Reference |
 |---|---|---|---|
-| [Logging](#logging) | `open` | phase 0 | — |
+| [TypeScript and modules](#typescript-and-modules) | `settled` | — | `tsconfig.base.json` |
+| [Logging](#logging) | `settled` | — | `packages/core/src/logger.ts` |
 | [Configuration and secrets](#configuration-and-secrets) | `open` | phase 0 | — |
 | [Time and IDs](#time-and-ids) | `open` | phase 0 | — |
 | [Background jobs](#background-jobs) | `open` | phase 0 | — |
@@ -46,17 +47,46 @@ collectors, frontend, tests) and are not repeated here.
 
 ---
 
+## TypeScript and modules
+
+**Status:** `settled` · reference: `tsconfig.base.json`, `pnpm-workspace.yaml`
+
+- **Node 24 runs the TypeScript sources directly** (type stripping). The worker
+  and the internal packages have no build step; only `apps/web` is built, by
+  Next.js. `tsc` only type-checks (`noEmit`).
+- **Relative imports carry the `.ts` extension** (`import { x } from
+  "./x.ts"`) — Node resolves files, not modules. Type-only imports use
+  `import type`.
+- **Erasable syntax only:** no `enum`, no `namespace`, no constructor parameter
+  properties. Use `as const` objects and unions instead of enums.
+- **Internal packages export their TypeScript source** through the `exports`
+  field of their `package.json`, one subpath per public module
+  (`@astra/core/logger`). No barrel file that drags server code along.
+- **Never copy workspace packages into `node_modules`** (e.g. `pnpm deploy`):
+  Node refuses to strip types below a `node_modules` path. Docker images keep
+  the workspace layout with pnpm's symlinks.
+- **TypeScript is held at 6.0.x.** TypeScript 7 (the native compiler) is out,
+  but typescript-eslint supports `<6.1` only. Move once it does — the settings
+  in `tsconfig.base.json` are already 7-compatible.
+- **Shared dependency versions** live in the pnpm catalog
+  (`pnpm-workspace.yaml`) and are referenced as `catalog:`.
+
+**Enforcement:** the compiler — `module: nodenext` rejects extensionless
+relative imports, `erasableSyntaxOnly` rejects non-erasable syntax.
+
 ## Logging
 
-**Status:** `open` · settle in phase 0
+**Status:** `settled` · reference: `packages/core/src/logger.ts`
 
-Known constraints:
-
+- **pino, through one factory:** `createLogger({ service, level })` from
+  `@astra/core/logger`. Each app creates its logger once at startup and hands
+  it — or children of it — down. `console.*` is not used anywhere.
 - **Structured JSON to stdout.** Docker collects it; from phase 8, Promtail
   ships it to Loki (`01-architecture.md`). No log files, no transports inside
-  the application.
-- **One logger**, created by a factory in `packages/core`. `console.*` is not
-  used anywhere.
+  the application. Each line carries `level` as a label, `time` as ISO 8601 in
+  UTC, and `service`.
+- **Readable in development** by piping through `pino-pretty` outside the
+  process, in the app's `dev` script. Never as a transport.
 - **Context through child loggers**, not string interpolation: always
   `service`; where applicable `source`, `jobId`, `storyId`.
 - **Levels mean something:**
@@ -64,15 +94,21 @@ Known constraints:
   - `warn` — degraded but handled (e.g. a source's circuit breaker opened)
   - `info` — lifecycle, and one summary line per job run
   - `debug` — off in production
+- **The level comes from `LOG_LEVEL`**, read by the app's config module.
+- **Errors go under `err`** — `log.error({ err }, "what failed")` — and are
+  serialised with type, message and stack.
 - **Never log** secrets, tokens, full article text, or full prompts and LLM
-  responses. Log IDs, counts and sizes instead.
+  responses. Log IDs, counts and sizes instead. As a safety net, the keys
+  `password`, `token`, `apiKey`, `secret`, `authorization`, `cookie`,
+  `databaseUrl` and `redisUrl` are redacted at the top level and one level
+  down — a net, not a licence.
 - **Log an error once**, where it is handled — not again at every layer on the
   way up.
 
-Still to decide: library (pino is the obvious candidate), redaction config,
-request correlation in `apps/web`.
+Still open: request correlation in `apps/web` — decided when the web app gets
+real API routes (phase 4).
 
-**Enforcement:** ESLint `no-console`.
+**Enforcement:** ESLint `no-console` (`eslint.config.js`).
 
 ## Configuration and secrets
 
