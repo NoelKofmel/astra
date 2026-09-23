@@ -20,8 +20,9 @@ one or two reading guests.
 ## Status
 
 **Phase 0 (foundation) in progress** (`docs/05-roadmap.md`). Built: monorepo,
-Drizzle schema and migrations, web and worker skeletons, CI. Still open: the
-server, the deploy pipeline and backups.
+Drizzle schema and migrations, web and worker skeletons, CI. Ready as code but
+not live yet: server, deploy pipeline, backups — the remaining steps are
+manual and listed in `docs/08-operations.md`.
 
 ## Language — binding
 
@@ -51,6 +52,7 @@ Swiss orthography in any German text: `ss`, never `ß`.
 | What comes next? | `docs/05-roadmap.md` |
 | Why is X the way it is? | `docs/06-decisions.md` |
 | How do we log / configure / call HTTP / …? | `docs/07-conventions.md` |
+| How is it deployed, backed up, restored? | `docs/08-operations.md` |
 
 For architectural questions: **always check the ADR log first.** A lot is
 already decided and reasoned through.

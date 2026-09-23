@@ -1,0 +1,187 @@
+#cloud-config
+# Astra production server: Ubuntu 24.04 on a Hetzner CX32.
+#
+# Paste into "Cloud config" when creating the server in the Hetzner Console —
+# docs/08-operations.md walks through it. Replace the three REPLACE_ values
+# first. On first boot this hardens SSH, enables the firewall, fail2ban and
+# automatic security updates, installs Docker, prepares /opt/astra for the
+# deploy pipeline with freshly generated secrets, and reboots.
+#
+# Later changes to server-level settings are not re-applied automatically:
+# make them here and on the server by hand, or rebuild the server.
+
+users:
+  # Administration: interactive SSH, sudo without password (key-only login).
+  - name: noel
+    groups: [sudo, docker]
+    shell: /bin/bash
+    sudo: "ALL=(ALL) NOPASSWD:ALL"
+    lock_passwd: true
+    ssh_authorized_keys:
+      - REPLACE_WITH_YOUR_PUBLIC_KEY
+  # Deployments from GitHub Actions and the nightly backup. No sudo, but the
+  # docker group — which is root-equivalent, so guard its key accordingly.
+  - name: deploy
+    groups: [docker]
+    shell: /bin/bash
+    lock_passwd: true
+    ssh_authorized_keys:
+      - REPLACE_WITH_CI_DEPLOY_PUBLIC_KEY
+
+# Created before Docker's package, so the users above can join it.
+groups: [docker]
+
+disable_root: true
+ssh_pwauth: false
+
+package_update: true
+package_upgrade: true
+packages:
+  - ufw
+  - fail2ban
+  - unattended-upgrades
+  - restic
+  - curl
+
+# 8 GB RAM leaves headroom, but swap turns an OOM kill into a slowdown.
+swap:
+  filename: /swapfile
+  size: 2G
+  maxsize: 2G
+
+write_files:
+  - path: /etc/ssh/sshd_config.d/10-astra.conf
+    content: |
+      PermitRootLogin no
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      AuthenticationMethods publickey
+      AllowUsers noel deploy
+      MaxAuthTries 3
+      X11Forwarding no
+
+      # The pipeline only runs commands; it never needs a terminal or tunnels.
+      Match User deploy
+          AllowTcpForwarding no
+          AllowAgentForwarding no
+          PermitTTY no
+
+  - path: /etc/fail2ban/jail.local
+    content: |
+      [DEFAULT]
+      bantime = 1h
+      findtime = 10m
+      maxretry = 5
+
+      [sshd]
+      enabled = true
+      backend = systemd
+
+  - path: /etc/apt/apt.conf.d/20auto-upgrades
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+
+  - path: /etc/apt/apt.conf.d/52astra-unattended-upgrades
+    content: |
+      // Kernel and libc fixes only take effect after a reboot; the containers
+      // come back on their own (restart: unless-stopped).
+      Unattended-Upgrade::Automatic-Reboot "true";
+      Unattended-Upgrade::Automatic-Reboot-Time "04:30";
+      Unattended-Upgrade::Remove-Unused-Dependencies "true";
+
+  - path: /etc/docker/daemon.json
+    content: |
+      {
+        "log-driver": "json-file",
+        "log-opts": { "max-size": "10m", "max-file": "5" },
+        "live-restore": true
+      }
+
+  - path: /home/deploy/.bash_aliases
+    owner: deploy:deploy
+    defer: true
+    content: |
+      # docker compose for the running release: dc ps, dc logs -f worker, …
+      alias dc='docker compose --project-directory /opt/astra --env-file /opt/astra/.env --env-file /opt/astra/release.env'
+
+  - path: /etc/systemd/system/astra-backup.service
+    content: |
+      [Unit]
+      Description=Astra database backup to the Storage Box
+      Requires=docker.service
+      After=docker.service
+
+      [Service]
+      Type=oneshot
+      User=deploy
+      EnvironmentFile=/opt/astra/.env
+      ExecStart=/opt/astra/backup.sh
+
+  - path: /etc/systemd/system/astra-backup.timer
+    content: |
+      [Unit]
+      Description=Nightly Astra database backup
+
+      [Timer]
+      OnCalendar=*-*-* 03:30:00 UTC
+      RandomizedDelaySec=15m
+      Persistent=true
+
+      [Install]
+      WantedBy=timers.target
+
+runcmd:
+  # Docker from Docker's own repository; Ubuntu's docker.io lags behind.
+  - install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  - chmod a+r /etc/apt/keyrings/docker.asc
+  - |
+    cat > /etc/apt/sources.list.d/docker.sources <<EOF
+    Types: deb
+    URIs: https://download.docker.com/linux/ubuntu
+    Suites: $(. /etc/os-release && echo "$VERSION_CODENAME")
+    Components: stable
+    Signed-By: /etc/apt/keyrings/docker.asc
+    EOF
+  - apt-get update
+  - apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+  # Firewall. Docker-published ports bypass UFW — only Caddy publishes any
+  # (80/443), and a Hetzner Cloud Firewall in front covers the rest.
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  - ufw limit 22/tcp
+  - ufw allow 80/tcp
+  - ufw allow 443/tcp
+  - ufw allow 443/udp
+  - ufw --force enable
+
+  - systemctl enable fail2ban
+  - systemctl daemon-reload
+  # Enabled on purpose before the Storage Box is set up: until then it fails
+  # every night, visibly, instead of silently not backing up.
+  - systemctl enable astra-backup.timer
+
+  # The deploy pipeline's home. Secrets are generated here and never leave
+  # the server — except RESTIC_PASSWORD, which belongs in a password manager.
+  - install -d -o deploy -g deploy -m 750 /opt/astra /opt/astra/caddy
+  - install -d -o deploy -g deploy -m 700 /var/backups/astra
+  - |
+    umask 077
+    cat > /opt/astra/.env <<EOF
+    # Production settings and secrets. Never commit. See docs/08-operations.md.
+    ASTRA_DOMAIN=:80
+    ACME_EMAIL=REPLACE_WITH_YOUR_EMAIL
+    LOG_LEVEL=info
+    POSTGRES_PASSWORD=$(openssl rand -hex 32)
+    RESTIC_REPOSITORY=sftp:storagebox:astra
+    RESTIC_PASSWORD=$(openssl rand -hex 32)
+    EOF
+    chown deploy:deploy /opt/astra/.env
+
+# Boot into the upgraded kernel with every setting above in effect.
+power_state:
+  mode: reboot
+  message: Astra first-boot setup complete, rebooting
+  condition: true

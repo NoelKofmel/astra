@@ -140,8 +140,11 @@ astra/
 ├── infra/
 │   ├── docker-compose.yml       # Production
 │   ├── docker-compose.dev.yml   # Local (Postgres + Redis only)
-│   ├── Caddyfile
-│   └── grafana/
+│   ├── caddy/Caddyfile
+│   ├── deploy.sh, backup.sh     # Run on the server
+│   ├── server/cloud-init.yaml   # Provisioning and hardening
+│   └── grafana/                 # Phase 8
+├── Dockerfile               # Both images: --target web | worker
 ├── assets/
 │   └── blender/             # .blend source files for detail assets
 ├── docs/
@@ -263,6 +266,8 @@ Ubuntu 24.04, Nuremberg or Helsinki.
 
 **Hardening** (day one, before the first deploy): SSH keys only, root login
 disabled, UFW limited to 22/80/443, fail2ban, unattended-upgrades. Not optional.
+All of it is `infra/server/cloud-init.yaml`, applied when the server is
+created; the steps around it are in [`08-operations.md`](08-operations.md).
 
 **CI/CD** (GitHub Actions):
 
@@ -273,11 +278,13 @@ push → lint → typecheck → test → build image → push to GHCR
 
 Migrations run as a separate step **before** containers restart, and strictly
 additively — adding a column yes, renaming one no. That way a rollback survives
-contact with the database.
+contact with the database. `deploy.sh` rolls back on its own when the new
+release does not come up healthy.
 
-**Backups:** nightly `pg_dump` to a Hetzner Storage Box, 30-day retention. A
-**restore test** is on the roadmap (phase 8): a backup that has never been
-restored is not a backup.
+**Backups:** nightly `pg_dump` to a Hetzner Storage Box, 30-day retention —
+through restic, so the backups are encrypted and deduplicated. A **restore
+test** is on the roadmap (phase 8): a backup that has never been restored is not
+a backup.
 
 **Secrets:** GitHub Actions secrets for deployment, a `chmod 600` `.env` on the
 server. Vault is overkill for a one-person project; if it ever grows, SOPS + age

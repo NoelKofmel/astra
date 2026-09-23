@@ -47,6 +47,7 @@ clustering for free.
 | [`docs/05-roadmap.md`](docs/05-roadmap.md) | Phased plan with definition of done |
 | [`docs/06-decisions.md`](docs/06-decisions.md) | Decision log (ADRs) |
 | [`docs/07-conventions.md`](docs/07-conventions.md) | How cross-cutting concerns are done — one way each |
+| [`docs/08-operations.md`](docs/08-operations.md) | Server setup, deploys, backups and restores |
 | [`CLAUDE.md`](CLAUDE.md) | Project context for Claude Code sessions |
 
 ## At a glance
