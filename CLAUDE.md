@@ -19,10 +19,14 @@ one or two reading guests.
 
 ## Status
 
-**Phase 0 (foundation) in progress** (`docs/05-roadmap.md`). Built: monorepo,
-Drizzle schema and migrations, web and worker skeletons, CI. Ready as code but
-not live yet: server, deploy pipeline, backups — the remaining steps are
-manual and listed in `docs/08-operations.md`.
+**Phase 0 (foundation) in progress** (`docs/05-roadmap.md`). Built and tested
+locally: monorepo, Drizzle schema and migrations, web and worker skeletons, CI,
+Docker images, deploy pipeline, server provisioning and backups as code. Not
+live yet.
+
+Next up — all manual, step by step in `docs/08-operations.md`: push so CI runs
+on GitHub for the first time; register a domain; create the server with
+cloud-init (steps 1–6); DNS and TLS (step 7); Storage Box and backups (step 8).
 
 ## Language — binding
 

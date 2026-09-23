@@ -27,6 +27,13 @@ yet, but everything is wired up.
 - [ ] Deploy pipeline: GHCR image → SSH → `docker compose up -d`
 - [ ] Nightly `pg_dump` to the storage box
 
+> **State on 2026-09-23:** every unchecked item exists as code and was tested
+> locally — `.github/workflows/ci.yml`, `infra/server/cloud-init.yaml`,
+> `infra/caddy/Caddyfile`, `infra/deploy.sh`, `infra/backup.sh`. What is left
+> is manual: push and see CI run on GitHub for the first time, create the
+> server, set the GitHub secrets, register the domain, order the Storage Box.
+> Step by step in [`08-operations.md`](08-operations.md).
+
 **Done when:** `git push` to `main` deploys automatically and
 `https://<domain>/api/health` returns `{ ok: true }` with the database
 reachable.
