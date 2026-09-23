@@ -140,6 +140,9 @@ the `EmbeddingProvider` interface.
 - The clustering thresholds have a **regression test** on the labelled dataset.
   Do not change them without re-measuring.
 - Critical flows: Playwright.
+- Tests run from the root as Vitest projects (`vitest.config.ts`) — no
+  per-package test scripts. `pnpm test:coverage` writes the LCOV report that
+  SonarQube imports in CI (`docs/08-operations.md#sonarqube`).
 
 ## Commands
 
@@ -149,7 +152,8 @@ First time: `cp .env.example .env && pnpm install`.
 pnpm infra:up       # Postgres + Redis in Docker, waits until healthy
 pnpm db:migrate     # apply migrations
 pnpm dev            # web (localhost:3000) + worker
-pnpm test           # Vitest
+pnpm test           # Vitest, every package (--project @astra/worker narrows it)
+pnpm test:coverage  # the same with coverage, as CI runs it
 pnpm lint && pnpm typecheck
 pnpm build          # Next.js production build
 pnpm format         # Prettier

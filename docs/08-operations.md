@@ -9,12 +9,16 @@ to take, and why.
 
 ```
 git push main
-  └─ CI/CD ─ check ─ images ─────────────── deploy ────────────── verify
-             lint     web + worker → GHCR    scp infra files        GET /api/health
-             types                           ssh deploy.sh <sha>    version == sha
-             tests                             pull, migrate,
-             build                             up --wait, rollback
+  └─ CI/CD ─ check ─┬─ sonarqube ─ analysis + coverage → SonarQube Cloud
+             lint   │
+             types  └─ images ─────────────── deploy ────────────── verify
+             tests     web + worker → GHCR    scp infra files        GET /api/health
+             build                            ssh deploy.sh <sha>    version == sha
+                                                pull, migrate,
+                                                up --wait, rollback
 ```
+
+Pull requests run `check` and `sonarqube` only.
 
 On the server:
 
@@ -204,6 +208,27 @@ Security updates install themselves; the server reboots at 04:30 UTC when a
 kernel update needs it, and the containers come back on their own. Docker
 itself is updated by hand: `sudo apt upgrade` now and then — `live-restore`
 keeps the containers running while the daemon restarts.
+
+## SonarQube
+
+SonarQube Cloud (free plan) analyses every push to `main` and every pull
+request. The `sonarqube` job in `ci.yml` runs after `check` and imports the
+coverage report `check` produced with `pnpm test:coverage`. The analysis scope
+lives in `sonar-project.properties`.
+
+- **Automatic Analysis must stay off** — project → *Administration → Analysis
+  Method*. It cannot import coverage, and with both switched on the CI
+  analysis fails.
+- The analysis needs the GitHub secret `SONAR_TOKEN` (created during the
+  SonarQube Cloud onboarding).
+- The quality gate shows up on each pull request. The default gate ("Sonar
+  way") expects 80 % coverage on new code; the phase-0 skeleton sits well
+  below that, so early pull requests will fail the gate. That is information,
+  not a blocker — unless the gate is made a required check.
+- A SonarQube outage never blocks a deploy: `images` and `deploy` do not wait
+  for the `sonarqube` job.
+- In VS Code, the recommended *SonarQube for IDE* extension shows the same
+  findings while typing, once connected to the project.
 
 ## Not here yet
 

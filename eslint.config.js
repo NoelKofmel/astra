@@ -42,7 +42,11 @@ export default fixupConfigRules(
       ],
       languageOptions: {
         parserOptions: {
-          projectService: true,
+          projectService: {
+            // Config files at the root belong to no package's tsconfig.
+            allowDefaultProject: ["*.config.ts"],
+            defaultProject: "tsconfig.base.json",
+          },
           tsconfigRootDir: import.meta.dirname,
         },
       },
