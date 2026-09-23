@@ -24,8 +24,9 @@ locally: monorepo, Drizzle schema and migrations, web and worker skeletons, CI,
 Docker images, deploy pipeline, server provisioning and backups as code. Not
 live yet.
 
-Next up — all manual, step by step in `docs/08-operations.md`: push so CI runs
-on GitHub for the first time; register a domain; create the server with
+Next up — all manual, step by step in `docs/08-operations.md`: open a pull
+request from `phase-0` (CI and SonarQube run on pull requests and on `main`,
+not on branch pushes) and merge it; register a domain; create the server with
 cloud-init (steps 1–6); DNS and TLS (step 7); Storage Box and backups (step 8).
 
 ## Language — binding
