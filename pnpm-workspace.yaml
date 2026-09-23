@@ -17,5 +17,7 @@ catalog:
 
 # Dependency install scripts are denied unless listed here (pnpm default).
 allowBuilds:
-  # Only a fallback download; the native binding arrives as an optional dependency.
+  # Both only verify or fetch a native binary that already arrives as an
+  # optional dependency.
+  esbuild: false
   unrs-resolver: false

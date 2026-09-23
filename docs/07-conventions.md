@@ -38,7 +38,7 @@ collectors, frontend, tests) and are not repeated here.
 | [TypeScript and modules](#typescript-and-modules) | `settled` | — | `tsconfig.base.json` |
 | [Logging](#logging) | `settled` | — | `packages/core/src/logger.ts` |
 | [Configuration and secrets](#configuration-and-secrets) | `open` | phase 0 | — |
-| [Time and IDs](#time-and-ids) | `open` | phase 0 | — |
+| [Time and IDs](#time-and-ids) | `settled` | — | `packages/db/src/schema.ts` |
 | [Background jobs](#background-jobs) | `open` | phase 0 | — |
 | [Errors](#errors) | `open` | phase 1 | — |
 | [Outbound HTTP](#outbound-http) | `open` | phase 1 | — |
@@ -124,11 +124,22 @@ real API routes (phase 4).
 
 ## Time and IDs
 
-**Status:** `open` · settle in phase 0
+**Status:** `settled` · reference: `packages/db/src/schema.ts`
 
-- Timestamps are `timestamptz`, stored in UTC. Conversion to `Europe/Zurich`
-  happens only at the edge (UI, Telegram messages).
-- Still to decide: primary key type (serial vs. UUIDv7), date library (if any).
+- **Primary keys are `bigint` identity columns** (`generated always as
+  identity`), assigned by the database. There is one database and no
+  distributed ID generation, so UUIDs would buy nothing; 8-byte keys keep
+  indexes and foreign keys small and IDs readable in logs, URLs and the admin
+  view. In TypeScript they are `number`. Foreign keys are `bigint` as well.
+- **Timestamps are `timestamptz`**, stored in UTC. Conversion to
+  `Europe/Zurich` happens only at the edge (UI, Telegram messages).
+- **No date library.** `Date` for instants; `Intl.DateTimeFormat` with
+  `timeZone: "Europe/Zurich"` for display. Revisit once `Temporal` ships
+  unflagged in the Node LTS we run (Node 24 has it behind a flag only).
+- **Money is `numeric`**, never a float: `cost_usd` is `numeric(12, 6)`.
+
+**Enforcement:** the column helpers `id()`, `foreignId()` and `timestamptz()`
+in `schema.ts` — new tables use them rather than spelling columns out.
 
 ## Background jobs
 
