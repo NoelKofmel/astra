@@ -4,7 +4,7 @@
 > the same story surfaces everywhere at once, summarises and explains it with
 > AI — and only speaks up when something is genuinely relevant.
 
-**Status:** Planning complete. Implementation not started.
+**Status:** Phase 0 (foundation) in progress — see the [roadmap](docs/05-roadmap.md).
 
 > **About the docs:** everything here is a **guide, not a manual.** The documents
 > capture direction and reasoning so the same decision doesn't have to be made

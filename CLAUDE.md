@@ -19,8 +19,9 @@ one or two reading guests.
 
 ## Status
 
-**Planning complete. No application code yet.** Next up: roadmap phase 0
-(`docs/05-roadmap.md`).
+**Phase 0 (foundation) in progress** (`docs/05-roadmap.md`). Built: monorepo,
+Drizzle schema and migrations, web and worker skeletons, CI. Still open: the
+server, the deploy pipeline and backups.
 
 ## Language — binding
 
@@ -103,6 +104,9 @@ the `EmbeddingProvider` interface.
 - External data (API responses, feeds, webhooks) is **always** parsed through a
   Zod schema. Never `as SomeType` on foreign data.
 - Derive types from the Drizzle schema; do not define them in parallel.
+- Node 24 runs the sources directly: **relative imports end in `.ts`**, and
+  only erasable syntax (no `enum`). Details in `docs/07-conventions.md`.
+- Query operators (`sql`, `eq`, …) come from `@astra/db`, not `drizzle-orm`.
 
 **Database**
 - Migrations are **additive**. Adding a column yes; renaming or dropping only as
@@ -133,15 +137,19 @@ the `EmbeddingProvider` interface.
 
 ## Commands
 
-*(set up in phase 0 — record them here once they exist)*
+First time: `cp .env.example .env && pnpm install`.
 
 ```bash
-pnpm dev            # web + worker locally
+pnpm infra:up       # Postgres + Redis in Docker, waits until healthy
 pnpm db:migrate     # apply migrations
-pnpm db:studio      # Drizzle Studio
+pnpm dev            # web (localhost:3000) + worker
 pnpm test           # Vitest
 pnpm lint && pnpm typecheck
-docker compose -f infra/docker-compose.dev.yml up -d   # Postgres + Redis
+pnpm build          # Next.js production build
+pnpm format         # Prettier
+pnpm db:generate    # new migration after changing packages/db/src/schema.ts
+pnpm db:studio      # Drizzle Studio
+pnpm infra:down     # stop Postgres + Redis (data stays in the volumes)
 ```
 
 ## MCP servers
