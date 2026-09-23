@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A newer push to the same branch makes the running check pointless.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NEXT_TELEMETRY_DISABLED: 1
+  TURBO_TELEMETRY_DISABLED: 1
+
+jobs:
+  check:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        # Same image as infra/docker-compose.*.yml
+        image: pgvector/pgvector:0.8.6-pg18
+        env:
+          POSTGRES_USER: astra
+          POSTGRES_PASSWORD: astra
+          POSTGRES_DB: astra
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U astra -d astra"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
+
+    env:
+      DATABASE_URL: postgres://astra:astra@localhost:5432/astra
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # pnpm from packageManager, Node from .nvmrc, then a frozen install.
+      - uses: pnpm/setup@fbda4c85fc2e1e08721cd8763afea8f48d60f024 # v3.0.0
+        with:
+          cache: true
+          require-lockfile: true
+
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+
+      - name: Migrations apply to an empty database
+        run: pnpm db:migrate
+
+      - name: Schema and migrations are in sync
+        run: |
+          pnpm db:generate
+          if [ -n "$(git status --porcelain -- packages/db/drizzle)" ]; then
+            echo "::error::packages/db/src/schema.ts changed without a migration. Run 'pnpm db:generate' and commit the result."
+            git status --porcelain -- packages/db/drizzle
+            exit 1
+          fi
+
+      - run: pnpm build
