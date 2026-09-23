@@ -13,13 +13,13 @@ the ordering matters more than the pace.
 **Goal:** an empty but fully deployable system. Nothing does anything useful
 yet, but everything is wired up.
 
-- [ ] Monorepo: pnpm workspaces + Turborepo, TypeScript `strict`
+- [x] Monorepo: pnpm workspaces + Turborepo, TypeScript `strict`
 - [x] `docker-compose.dev.yml` — Postgres 18 + pgvector, Redis
 - [x] Drizzle schema + first migration (every table from `01-architecture.md`)
-- [ ] Next.js skeleton with a healthcheck route
+- [x] Next.js skeleton with a healthcheck route
 - [x] Worker skeleton with BullMQ and one dummy job
 - [ ] GitHub Actions: lint → typecheck → test → build
-- [ ] Settle the phase-0 conventions — logging, config, time/IDs, jobs
+- [x] Settle the phase-0 conventions — logging, config, time/IDs, jobs
       (`07-conventions.md`) — including the lint rules that enforce them
 - [ ] Provision the Hetzner CX32 and **harden it** (SSH keys only, UFW,
       fail2ban, unattended-upgrades)

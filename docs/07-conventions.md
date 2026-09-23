@@ -120,9 +120,15 @@ real API routes (phase 4).
   which reports every problem at once and never echoes the values. Everything
   else imports the typed result.
 - **Fail fast:** the worker parses on import, before anything connects.
+- **The web app parses lazily** — `config()` in `apps/web/src/config.ts` —
+  because `next build` loads route modules without a runtime environment.
+  `instrumentation-node.ts` calls it at server start and exits on failure;
+  Next.js would otherwise log the error and go on answering with 500s.
 - **Local development uses one `.env` at the repository root**, copied from
-  `.env.example`. Scripts load it with Node's `--env-file-if-exists`;
-  variables already set in the shell win.
+  `.env.example`. Scripts load it with Node's `--env-file-if-exists`; the web
+  app with `process.loadEnvFile` in `next.config.ts`, because Next.js hands
+  Node flags to its child processes through `NODE_OPTIONS`, where
+  `--env-file` is not allowed. Variables already set in the shell win.
 - A new variable goes into `.env.example` in the same commit.
 - No secrets in the repository (`CLAUDE.md`). Production values live in a
   `chmod 600` env file on the server.

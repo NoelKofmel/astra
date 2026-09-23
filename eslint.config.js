@@ -1,4 +1,6 @@
 // @ts-check
+import path from "node:path";
+import { fixupConfigRules } from "@eslint/compat";
 import js from "@eslint/js";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import prettier from "eslint-config-prettier/flat";
@@ -22,62 +24,73 @@ const envReaders = [
 const useTypedConfig =
   "Import the typed config instead (docs/07-conventions.md#configuration-and-secrets).";
 
-export default defineConfig([
-  globalIgnores(["**/.next/", "**/.turbo/", "**/coverage/", "**/next-env.d.ts"]),
+// The React, a11y and import plugins inside eslint-config-next still call
+// context methods that ESLint 10 removed; fixupConfigRules shims them. It wraps
+// the whole config because a plugin always gets the same wrapper — wrapping
+// only the Next part would leave two different @typescript-eslint objects.
+// Drop it once those plugins support ESLint 10.
+export default fixupConfigRules(
+  defineConfig([
+    globalIgnores(["**/.next/", "**/.turbo/", "**/coverage/", "**/next-env.d.ts"]),
 
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      js.configs.recommended,
-      tseslint.configs.strictTypeChecked,
-      tseslint.configs.stylisticTypeChecked,
-    ],
-    languageOptions: {
-      parserOptions: {
-        projectService: true,
-        tsconfigRootDir: import.meta.dirname,
+    {
+      files: ["**/*.{ts,tsx}"],
+      extends: [
+        js.configs.recommended,
+        tseslint.configs.strictTypeChecked,
+        tseslint.configs.stylisticTypeChecked,
+      ],
+      languageOptions: {
+        parserOptions: {
+          projectService: true,
+          tsconfigRootDir: import.meta.dirname,
+        },
+      },
+      rules: {
+        // Logging: one logger from @astra/core, never console.*
+        "no-console": "error",
+
+        // Configuration: environment variables are read in exactly one module per app.
+        "no-restricted-properties": [
+          "error",
+          { object: "process", property: "env", message: useTypedConfig },
+        ],
+        "no-restricted-imports": [
+          "error",
+          {
+            paths: ["process", "node:process"].map((name) => ({
+              name,
+              importNames: ["env"],
+              message: useTypedConfig,
+            })),
+          },
+        ],
+
+        "@typescript-eslint/consistent-type-imports": "error",
       },
     },
-    rules: {
-      // Logging: one logger from @astra/core, never console.*
-      "no-console": "error",
 
-      // Configuration: environment variables are read in exactly one module per app.
-      "no-restricted-properties": [
-        "error",
-        { object: "process", property: "env", message: useTypedConfig },
-      ],
-      "no-restricted-imports": [
-        "error",
-        {
-          paths: ["process", "node:process"].map((name) => ({
-            name,
-            importNames: ["env"],
-            message: useTypedConfig,
-          })),
-        },
-      ],
-
-      "@typescript-eslint/consistent-type-imports": "error",
+    {
+      files: envReaders,
+      rules: { "no-restricted-properties": "off" },
     },
-  },
 
-  {
-    files: envReaders,
-    rules: { "no-restricted-properties": "off" },
-  },
+    {
+      files: ["apps/web/**/*.{ts,tsx}"],
+      extends: [nextVitals],
+      settings: { next: { rootDir: path.join(import.meta.dirname, "apps/web") } },
+      rules: {
+        // Pages Router only; the app has none.
+        "@next/next/no-html-link-for-pages": "off",
+      },
+    },
 
-  {
-    files: ["apps/web/**/*.{ts,tsx}"],
-    extends: [nextVitals],
-    settings: { next: { rootDir: "apps/web/" } },
-  },
+    {
+      files: ["**/*.js"],
+      extends: [js.configs.recommended],
+    },
 
-  {
-    files: ["**/*.js"],
-    extends: [js.configs.recommended],
-  },
-
-  // Last: switch off every stylistic rule that would fight Prettier.
-  prettier,
-]);
+    // Last: switch off every stylistic rule that would fight Prettier.
+    prettier,
+  ]),
+);

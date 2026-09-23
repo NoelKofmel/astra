@@ -21,6 +21,7 @@
     "db:studio": "pnpm --filter @astra/db run studio"
   },
   "devDependencies": {
+    "@eslint/compat": "^2.1.1",
     "@eslint/js": "^10.0.1",
     "@types/node": "catalog:",
     "eslint": "^10.11.0",
