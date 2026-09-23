@@ -36,6 +36,7 @@ collectors, frontend, tests) and are not repeated here.
 | Concern | Status | Settle in | Reference |
 |---|---|---|---|
 | [TypeScript and modules](#typescript-and-modules) | `settled` | — | `tsconfig.base.json` |
+| [Formatting](#formatting) | `settled` | — | `.prettierrc.json` |
 | [Logging](#logging) | `settled` | — | `packages/core/src/logger.ts` |
 | [Configuration and secrets](#configuration-and-secrets) | `settled` | — | `apps/worker/src/config.ts` |
 | [Time and IDs](#time-and-ids) | `settled` | — | `packages/db/src/schema.ts` |
@@ -73,6 +74,24 @@ collectors, frontend, tests) and are not repeated here.
 
 **Enforcement:** the compiler — `module: nodenext` rejects extensionless
 relative imports, `erasableSyntaxOnly` rejects non-erasable syntax.
+
+## Formatting
+
+**Status:** `settled` · reference: `.prettierrc.json`, `.prettierignore`
+
+- **Prettier formats everything it understands** — TypeScript, JSON, YAML,
+  CSS — with its defaults, except a line width of 100. Whatever Prettier
+  produces is the style; there is nothing to discuss.
+- **Markdown is excluded.** The documents are wrapped by hand at 80 columns,
+  and reformatting them would only churn the diffs.
+- **ESLint does not judge style.** `eslint-config-prettier` switches off every
+  rule that would fight Prettier; ESLint is for correctness.
+- **Format on save** in VS Code (`.vscode/settings.json`, extensions
+  recommended in `.vscode/extensions.json`). `pnpm format` rewrites the whole
+  repository, `pnpm format:check` only checks.
+
+**Enforcement:** `pnpm format:check` in CI — an unformatted file fails the
+build.
 
 ## Logging
 
