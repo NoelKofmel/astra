@@ -1,0 +1,18 @@
+# Only what the images need; everything else stays out of the build context.
+**/node_modules
+**/.next
+**/.turbo
+**/coverage
+**/*.log
+**/*.md
+**/*.test.ts
+.git
+.github
+.claude
+.idea
+.vscode
+.env
+.env.*
+docs
+infra
+assets

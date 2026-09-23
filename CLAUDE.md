@@ -19,8 +19,15 @@ one or two reading guests.
 
 ## Status
 
-**Planning complete. No application code yet.** Next up: roadmap phase 0
-(`docs/05-roadmap.md`).
+**Phase 0 (foundation) in progress** (`docs/05-roadmap.md`). Built and tested
+locally: monorepo, Drizzle schema and migrations, web and worker skeletons, CI,
+Docker images, deploy pipeline, server provisioning and backups as code. Not
+live yet.
+
+Next up — all manual, step by step in `docs/08-operations.md`: open a pull
+request from `phase-0` (CI and SonarQube run on pull requests and on `main`,
+not on branch pushes) and merge it; register a domain; create the server with
+cloud-init (steps 1–6); DNS and TLS (step 7); Storage Box and backups (step 8).
 
 ## Language — binding
 
@@ -50,6 +57,7 @@ Swiss orthography in any German text: `ss`, never `ß`.
 | What comes next? | `docs/05-roadmap.md` |
 | Why is X the way it is? | `docs/06-decisions.md` |
 | How do we log / configure / call HTTP / …? | `docs/07-conventions.md` |
+| How is it deployed, backed up, restored? | `docs/08-operations.md` |
 
 For architectural questions: **always check the ADR log first.** A lot is
 already decided and reasoned through.
@@ -57,7 +65,7 @@ already decided and reasoned through.
 ## Stack
 
 Next.js 16 (App Router) · React 19 · TypeScript `strict` · Tailwind CSS v4 ·
-Drizzle ORM · Postgres 17 + pgvector + pg_trgm · Redis + BullMQ ·
+Drizzle ORM · Postgres 18 + pgvector + pg_trgm · Redis + BullMQ ·
 react-three-fiber · Zod · Vitest + Playwright
 
 Monorepo: pnpm workspaces + Turborepo.
@@ -103,6 +111,9 @@ the `EmbeddingProvider` interface.
 - External data (API responses, feeds, webhooks) is **always** parsed through a
   Zod schema. Never `as SomeType` on foreign data.
 - Derive types from the Drizzle schema; do not define them in parallel.
+- Node 24 runs the sources directly: **relative imports end in `.ts`**, and
+  only erasable syntax (no `enum`). Details in `docs/07-conventions.md`.
+- Query operators (`sql`, `eq`, …) come from `@astra/db`, not `drizzle-orm`.
 
 **Database**
 - Migrations are **additive**. Adding a column yes; renaming or dropping only as
@@ -130,18 +141,26 @@ the `EmbeddingProvider` interface.
 - The clustering thresholds have a **regression test** on the labelled dataset.
   Do not change them without re-measuring.
 - Critical flows: Playwright.
+- Tests run from the root as Vitest projects (`vitest.config.ts`) — no
+  per-package test scripts. `pnpm test:coverage` writes the LCOV report that
+  SonarQube imports in CI (`docs/08-operations.md#sonarqube`).
 
 ## Commands
 
-*(set up in phase 0 — record them here once they exist)*
+First time: `cp .env.example .env && pnpm install`.
 
 ```bash
-pnpm dev            # web + worker locally
+pnpm infra:up       # Postgres + Redis in Docker, waits until healthy
 pnpm db:migrate     # apply migrations
-pnpm db:studio      # Drizzle Studio
-pnpm test           # Vitest
+pnpm dev            # web (localhost:3000) + worker
+pnpm test           # Vitest, every package (--project @astra/worker narrows it)
+pnpm test:coverage  # the same with coverage, as CI runs it
 pnpm lint && pnpm typecheck
-docker compose -f infra/docker-compose.dev.yml up -d   # Postgres + Redis
+pnpm build          # Next.js production build
+pnpm format         # Prettier
+pnpm db:generate    # new migration after changing packages/db/src/schema.ts
+pnpm db:studio      # Drizzle Studio
+pnpm infra:down     # stop Postgres + Redis (data stays in the volumes)
 ```
 
 ## MCP servers

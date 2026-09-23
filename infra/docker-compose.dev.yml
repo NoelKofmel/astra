@@ -1,0 +1,44 @@
+# Local development: Postgres and Redis only — the apps run on the host
+# (`pnpm dev`). Same images as production.
+#
+#   pnpm infra:up      start and wait until healthy
+#   pnpm infra:down    stop (data stays in the named volumes)
+
+name: astra-dev
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.6-pg18
+    environment:
+      POSTGRES_USER: astra
+      POSTGRES_PASSWORD: astra
+      POSTGRES_DB: astra
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      # Postgres 18 images keep their data in /var/lib/postgresql/18/docker:
+      # mount the parent, not the /var/lib/postgresql/data of older images.
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U astra -d astra"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+  redis:
+    image: redis:8.10-alpine
+    # BullMQ needs noeviction; the append-only file lets queued jobs survive a restart.
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+volumes:
+  postgres-data:
+  redis-data:

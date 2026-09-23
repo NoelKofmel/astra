@@ -1,0 +1,119 @@
+# Production: one server, Docker Compose (docs/08-operations.md).
+#
+# The pipeline copies this file, caddy/Caddyfile and the scripts to /opt/astra
+# and runs deploy.sh there. Settings and secrets come from /opt/astra/.env
+# (chmod 600); the release to run from release.env, written by deploy.sh.
+#
+# Only Caddy publishes ports. Postgres and Redis are reachable on the internal
+# network alone — Docker bypasses UFW for published ports, so never publish them.
+
+name: astra
+
+services:
+  caddy:
+    image: caddy:2.11.4-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      ASTRA_DOMAIN: ${ASTRA_DOMAIN:?set ASTRA_DOMAIN in .env}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in .env}
+    volumes:
+      # The directory, not the file: a single-file bind mount keeps pointing at
+      # the old inode once the file is replaced.
+      - ./caddy:/etc/caddy:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - web
+
+  web:
+    image: ghcr.io/noelkofmel/astra-web:${ASTRA_VERSION:?set by deploy.sh in release.env}
+    restart: unless-stopped
+    init: true
+    environment:
+      DATABASE_URL: postgres://astra:${POSTGRES_PASSWORD}@postgres:5432/astra
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    # Next.js finishes in-flight requests on SIGTERM.
+    stop_grace_period: 30s
+    mem_limit: 768m
+
+  worker:
+    image: ghcr.io/noelkofmel/astra-worker:${ASTRA_VERSION:?set by deploy.sh in release.env}
+    restart: unless-stopped
+    init: true
+    environment:
+      DATABASE_URL: postgres://astra:${POSTGRES_PASSWORD}@postgres:5432/astra
+      REDIS_URL: redis://redis:6379
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    # Running jobs finish on SIGTERM; this must outlast the longest job.
+    stop_grace_period: 60s
+    mem_limit: 768m
+
+  postgres:
+    image: pgvector/pgvector:0.8.6-pg18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: astra
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: astra
+    volumes:
+      # Postgres 18 images keep their data in /var/lib/postgresql/18/docker.
+      - postgres-data:/var/lib/postgresql
+    # Docker's 64 MB default is too small for parallel queries.
+    shm_size: 256mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U astra -d astra"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    stop_grace_period: 60s
+
+  redis:
+    image: redis:8.10-alpine
+    restart: unless-stopped
+    # BullMQ needs noeviction; maxmemory turns a runaway queue into failed
+    # writes instead of an out-of-memory server.
+    command:
+      [
+        "redis-server",
+        "--appendonly",
+        "yes",
+        "--maxmemory-policy",
+        "noeviction",
+        "--maxmemory",
+        "256mb",
+      ]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  caddy-data:
+  caddy-config:
+  postgres-data:
+  redis-data:

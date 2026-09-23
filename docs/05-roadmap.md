@@ -13,19 +13,26 @@ the ordering matters more than the pace.
 **Goal:** an empty but fully deployable system. Nothing does anything useful
 yet, but everything is wired up.
 
-- [ ] Monorepo: pnpm workspaces + Turborepo, TypeScript `strict`
-- [ ] `docker-compose.dev.yml` — Postgres 17 + pgvector, Redis
-- [ ] Drizzle schema + first migration (every table from `01-architecture.md`)
-- [ ] Next.js skeleton with a healthcheck route
-- [ ] Worker skeleton with BullMQ and one dummy job
+- [x] Monorepo: pnpm workspaces + Turborepo, TypeScript `strict`
+- [x] `docker-compose.dev.yml` — Postgres 18 + pgvector, Redis
+- [x] Drizzle schema + first migration (every table from `01-architecture.md`)
+- [x] Next.js skeleton with a healthcheck route
+- [x] Worker skeleton with BullMQ and one dummy job
 - [ ] GitHub Actions: lint → typecheck → test → build
-- [ ] Settle the phase-0 conventions — logging, config, time/IDs, jobs
+- [x] Settle the phase-0 conventions — logging, config, time/IDs, jobs
       (`07-conventions.md`) — including the lint rules that enforce them
 - [ ] Provision the Hetzner CX32 and **harden it** (SSH keys only, UFW,
       fail2ban, unattended-upgrades)
 - [ ] Domain + Caddy with automatic TLS
 - [ ] Deploy pipeline: GHCR image → SSH → `docker compose up -d`
 - [ ] Nightly `pg_dump` to the storage box
+
+> **State on 2026-09-23:** every unchecked item exists as code and was tested
+> locally — `.github/workflows/ci.yml`, `infra/server/cloud-init.yaml`,
+> `infra/caddy/Caddyfile`, `infra/deploy.sh`, `infra/backup.sh`. What is left
+> is manual: open a pull request so CI runs on GitHub for the first time, create
+> the server, set the GitHub secrets, register the domain, order the Storage Box.
+> Step by step in [`08-operations.md`](08-operations.md).
 
 **Done when:** `git push` to `main` deploys automatically and
 `https://<domain>/api/health` returns `{ ok: true }` with the database

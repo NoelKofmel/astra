@@ -1,0 +1,25 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Versions used by more than one package. Reference them with "catalog:".
+catalog:
+  "@types/node": ^24.13.0
+  # Held at 6.0.x: typescript-eslint supports TypeScript <6.1 only, so the
+  # native TypeScript 7 cannot be used for type-aware linting yet.
+  typescript: ~6.0.3
+  # The coverage provider must be the exact same version as vitest.
+  vitest: ^5.0.1
+  "@vitest/coverage-v8": ^5.0.1
+  zod: ^4.6.0
+  # next and its lint config are released together — keep them in step.
+  next: ^16.3.0
+  eslint-config-next: ^16.3.0
+
+# Dependency install scripts are denied unless listed here (pnpm default).
+allowBuilds:
+  # Each only verifies, fetches or compiles a native binary that already
+  # arrives prebuilt as an optional dependency.
+  esbuild: false
+  msgpackr-extract: false
+  unrs-resolver: false

@@ -106,13 +106,20 @@ worse than no notification at all.
 
 | Service | Image / base | Purpose |
 |---|---|---|
-| `web` | Node 22 · Next.js 16 | UI + API routes |
-| `worker` | Node 22 | Collectors, enrichment, clustering (BullMQ consumers) |
-| `scheduler` | Node 22 | Cron → BullMQ jobs (may run inside the worker) |
-| `postgres` | `pgvector/pgvector:pg17` | Everything persistent |
-| `redis` | `redis:7-alpine` | BullMQ queue + cache |
+| `web` | Node 24 · Next.js 16 | UI + API routes |
+| `worker` | Node 24 | Collectors, enrichment, clustering (BullMQ consumers) |
+| `scheduler` | — | Cron → BullMQ job schedulers; runs inside the worker (settled in phase 0) |
+| `postgres` | `pgvector/pgvector:0.8.6-pg18` | Everything persistent |
+| `redis` | `redis:8.10-alpine` | BullMQ queue + cache |
 | `caddy` | `caddy:2-alpine` | Reverse proxy, automatic TLS |
 | `grafana` + `loki` + `promtail` | — | Logs and dashboards (phase 8 onwards) |
+
+> Versions changed when phase 0 started (2026-09-23): Node 24 is the active
+> LTS, while 22 reaches end of life in April 2027. Postgres 18 instead of 17
+> buys a year more support (to 2030) and skips the first major upgrade. Redis 8
+> is the maintained line. BullMQ 6 could also run on Postgres instead of Redis,
+> but that backend was only two months old then; since the API is identical,
+> switching later is a small change.
 
 `web` and `worker` share code but run as separate containers. The reason is
 operational hygiene: a collector stuck in a retry loop because of a broken RSS
@@ -133,8 +140,11 @@ astra/
 ├── infra/
 │   ├── docker-compose.yml       # Production
 │   ├── docker-compose.dev.yml   # Local (Postgres + Redis only)
-│   ├── Caddyfile
-│   └── grafana/
+│   ├── caddy/Caddyfile
+│   ├── deploy.sh, backup.sh     # Run on the server
+│   ├── server/cloud-init.yaml   # Provisioning and hardening
+│   └── grafana/                 # Phase 8
+├── Dockerfile               # Both images: --target web | worker
 ├── assets/
 │   └── blender/             # .blend source files for detail assets
 ├── docs/
@@ -149,8 +159,18 @@ want to find out.
 
 ## Data model
 
-PostgreSQL 17 with `pgvector` (semantic search) and `pg_trgm` (title
+PostgreSQL 18 with `pgvector` (semantic search) and `pg_trgm` (title
 similarity).
+
+The authoritative version is `packages/db/src/schema.ts`; this section explains
+the intent. Keys are `bigint` identity columns and timestamps `timestamptz`
+([conventions](07-conventions.md#time-and-ids)).
+
+### `users`
+Everyone who may read Astra — Noel and one or two friends (ADR-001). The tables
+that belong to a person (`interactions`, `profiles`, `notifications`) reference
+it through `user_id`. Deliberately minimal: the GitHub identity arrives with
+authentication in phase 4.
 
 ### `sources`
 Registry of sources. Configuration lives in `config jsonb` (feed URLs, GitHub
@@ -164,13 +184,15 @@ Collected entries, **unmodified**. One row per source per find.
 id, source_id, external_id, url, canonical_url, title, body_snippet,
 author, published_at, engagement jsonb, fetched_at, raw jsonb
 UNIQUE (source_id, external_id)
-INDEX ON (canonical_url), (fetched_at DESC)
+INDEX ON (canonical_url), (fetched_at)
 ```
 
 `raw jsonb` keeps the original response. It costs little and saves you when the
 normaliser turns out to have had a bug — then you reprocess instead of
 re-collecting. `body_snippet` rather than full text: legally clean (see
-[Legal](02-sources.md#legal)) and smaller.
+[Legal](02-sources.md#legal)) and smaller. The column is `varchar(500)`, so the
+database itself refuses anything longer. For the same reason, collectors strip
+full article text (RSS `content:encoded`, say) from `raw` before storing it.
 
 ### `stories`
 The condensed event — the unit a human actually sees.
@@ -178,11 +200,19 @@ The condensed event — the unit a human actually sees.
 ```
 id, cluster_key, title, summary_short, summary_deep, explainer,
 topics text[], entities jsonb, geo jsonb, importance smallint,
-embedding vector(1024), lang, first_seen_at, last_activity_at,
-source_count smallint, enriched_at
-INDEX USING hnsw (embedding vector_cosine_ops)
-INDEX ON (last_activity_at DESC), (importance DESC)
+embedding vector(1024), embedding_model, lang, first_seen_at,
+last_activity_at, source_count smallint, enriched_at
+INDEX ON (last_activity_at), (importance)
+INDEX USING hnsw (embedding vector_cosine_ops)      -- phase 2
+INDEX USING gin (title gin_trgm_ops)                -- phase 2
 ```
+
+The b-tree indexes are plain ascending ones; Postgres scans them backwards for
+`ORDER BY … DESC`. The two clustering indexes arrive in phase 2, where their
+parameters get measured — over a 72-hour window a sequential scan may even win.
+
+`embedding_model` records which model produced the vector (ADR-009): changing
+models means a full reindex, and the column says which rows are stale.
 
 `source_count` is redundant — it could be counted from `story_items` — but the
 ranking needs it on every query, so it is denormalised.
@@ -193,34 +223,37 @@ function are coupled here, and the globe is not decoration.
 
 ### `story_items`
 Many-to-many between `stories` and `raw_items`. Also records `match_method`
-(`url` | `trigram` | `embedding` | `llm`) and `confidence`, so you can later
-measure how well each clustering stage performs.
+(`seed` | `url` | `trigram` | `embedding` | `llm`) and `confidence`, so you can
+later measure how well each clustering stage performs. `seed` marks the item
+that founded the story.
 
 ### `interactions`
 Behavioural data for personalisation.
 
 ```
-id, story_id, kind, value, created_at
+id, user_id, story_id, kind, value, created_at
 kind ∈ (impression | open | dwell | save | hide | up | down)
 ```
 
 `dwell` (seconds spent reading) is the most honest signal available. A click
-says "looked interesting"; ninety seconds says "it was".
+says "looked interesting"; ninety seconds says "it was". `user_id` keeps the
+friends' reading from training Noel's profile.
 
-### `profile`
-One row for now. Holds `topic_weights jsonb` (set explicitly) and
-`embedding vector(1024)` (learned implicitly). The table still carries a
-`user_id` so a second profile later needs no migration.
+### `profiles`
+One row per user, in practice one. Holds `topic_weights jsonb` (set
+explicitly) and `embedding vector(1024)` (learned implicitly). Keyed by
+`user_id`, so a second profile later needs no migration.
 
 ### `notifications`
-`story_id, channel, sent_at, reason, feedback` — prevents duplicate pushes and
-records *why* something went out. Without that `reason` field a rules engine is
-undebuggable.
+`user_id, story_id, channel, sent_at, reason, feedback` — prevents duplicate
+pushes and records *why* something went out. Without that `reason` field a
+rules engine is undebuggable.
 
 ### `job_runs`
-`job_name, started_at, finished_at, status, items_in, items_out, cost_usd, error`
-— telemetry for every pipeline run. The basis for the cost dashboard and for
-alerting when a collector dies quietly.
+`job_name, job_id, attempt, started_at, finished_at, status, items_in,
+items_out, cost_usd, error` — telemetry for every pipeline run, one row per
+attempt. The basis for the cost dashboard and for alerting when a collector
+dies quietly. `job_id` and `attempt` tie a row to BullMQ and to the logs.
 
 ## Deployment
 
@@ -233,6 +266,8 @@ Ubuntu 24.04, Nuremberg or Helsinki.
 
 **Hardening** (day one, before the first deploy): SSH keys only, root login
 disabled, UFW limited to 22/80/443, fail2ban, unattended-upgrades. Not optional.
+All of it is `infra/server/cloud-init.yaml`, applied when the server is
+created; the steps around it are in [`08-operations.md`](08-operations.md).
 
 **CI/CD** (GitHub Actions):
 
@@ -243,11 +278,13 @@ push → lint → typecheck → test → build image → push to GHCR
 
 Migrations run as a separate step **before** containers restart, and strictly
 additively — adding a column yes, renaming one no. That way a rollback survives
-contact with the database.
+contact with the database. `deploy.sh` rolls back on its own when the new
+release does not come up healthy.
 
-**Backups:** nightly `pg_dump` to a Hetzner Storage Box, 30-day retention. A
-**restore test** is on the roadmap (phase 8): a backup that has never been
-restored is not a backup.
+**Backups:** nightly `pg_dump` to a Hetzner Storage Box, 30-day retention —
+through restic, so the backups are encrypted and deduplicated. A **restore
+test** is on the roadmap (phase 8): a backup that has never been restored is not
+a backup.
 
 **Secrets:** GitHub Actions secrets for deployment, a `chmod 600` `.env` on the
 server. Vault is overkill for a one-person project; if it ever grows, SOPS + age

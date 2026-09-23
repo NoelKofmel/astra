@@ -1,0 +1,23 @@
+{
+  "name": "@astra/worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --env-file-if-exists=../../.env --watch src/main.ts | pino-pretty",
+    "start": "node src/main.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@astra/core": "workspace:*",
+    "@astra/db": "workspace:*",
+    "bullmq": "^6.3.0",
+    "ioredis": "^6.0.0",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "pino-pretty": "^13.1.0",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

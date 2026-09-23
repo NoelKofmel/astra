@@ -35,10 +35,12 @@ collectors, frontend, tests) and are not repeated here.
 
 | Concern | Status | Settle in | Reference |
 |---|---|---|---|
-| [Logging](#logging) | `open` | phase 0 | — |
-| [Configuration and secrets](#configuration-and-secrets) | `open` | phase 0 | — |
-| [Time and IDs](#time-and-ids) | `open` | phase 0 | — |
-| [Background jobs](#background-jobs) | `open` | phase 0 | — |
+| [TypeScript and modules](#typescript-and-modules) | `settled` | — | `tsconfig.base.json` |
+| [Formatting](#formatting) | `settled` | — | `.prettierrc.json` |
+| [Logging](#logging) | `settled` | — | `packages/core/src/logger.ts` |
+| [Configuration and secrets](#configuration-and-secrets) | `settled` | — | `apps/worker/src/config.ts` |
+| [Time and IDs](#time-and-ids) | `settled` | — | `packages/db/src/schema.ts` |
+| [Background jobs](#background-jobs) | `settled` | — | `apps/worker/src/jobs/` |
 | [Errors](#errors) | `open` | phase 1 | — |
 | [Outbound HTTP](#outbound-http) | `open` | phase 1 | — |
 | [AI calls](#ai-calls) | `open` | phase 3 | — |
@@ -46,17 +48,64 @@ collectors, frontend, tests) and are not repeated here.
 
 ---
 
+## TypeScript and modules
+
+**Status:** `settled` · reference: `tsconfig.base.json`, `pnpm-workspace.yaml`
+
+- **Node 24 runs the TypeScript sources directly** (type stripping). The worker
+  and the internal packages have no build step; only `apps/web` is built, by
+  Next.js. `tsc` only type-checks (`noEmit`).
+- **Relative imports carry the `.ts` extension** (`import { x } from
+  "./x.ts"`) — Node resolves files, not modules. Type-only imports use
+  `import type`.
+- **Erasable syntax only:** no `enum`, no `namespace`, no constructor parameter
+  properties. Use `as const` objects and unions instead of enums.
+- **Internal packages export their TypeScript source** through the `exports`
+  field of their `package.json`, one subpath per public module
+  (`@astra/core/logger`). No barrel file that drags server code along.
+- **Never copy workspace packages into `node_modules`** (e.g. `pnpm deploy`):
+  Node refuses to strip types below a `node_modules` path. Docker images keep
+  the workspace layout with pnpm's symlinks.
+- **TypeScript is held at 6.0.x.** TypeScript 7 (the native compiler) is out,
+  but typescript-eslint supports `<6.1` only. Move once it does — the settings
+  in `tsconfig.base.json` are already 7-compatible.
+- **Shared dependency versions** live in the pnpm catalog
+  (`pnpm-workspace.yaml`) and are referenced as `catalog:`.
+
+**Enforcement:** the compiler — `module: nodenext` rejects extensionless
+relative imports, `erasableSyntaxOnly` rejects non-erasable syntax.
+
+## Formatting
+
+**Status:** `settled` · reference: `.prettierrc.json`, `.prettierignore`
+
+- **Prettier formats everything it understands** — TypeScript, JSON, YAML,
+  CSS — with its defaults, except a line width of 100. Whatever Prettier
+  produces is the style; there is nothing to discuss.
+- **Markdown is excluded.** The documents are wrapped by hand at 80 columns,
+  and reformatting them would only churn the diffs.
+- **ESLint does not judge style.** `eslint-config-prettier` switches off every
+  rule that would fight Prettier; ESLint is for correctness.
+- **Format on save** in VS Code (`.vscode/settings.json`, extensions
+  recommended in `.vscode/extensions.json`). `pnpm format` rewrites the whole
+  repository, `pnpm format:check` only checks.
+
+**Enforcement:** `pnpm format:check` in CI — an unformatted file fails the
+build.
+
 ## Logging
 
-**Status:** `open` · settle in phase 0
+**Status:** `settled` · reference: `packages/core/src/logger.ts`
 
-Known constraints:
-
+- **pino, through one factory:** `createLogger({ service, level })` from
+  `@astra/core/logger`. Each app creates its logger once at startup and hands
+  it — or children of it — down. `console.*` is not used anywhere.
 - **Structured JSON to stdout.** Docker collects it; from phase 8, Promtail
   ships it to Loki (`01-architecture.md`). No log files, no transports inside
-  the application.
-- **One logger**, created by a factory in `packages/core`. `console.*` is not
-  used anywhere.
+  the application. Each line carries `level` as a label, `time` as ISO 8601 in
+  UTC, and `service`.
+- **Readable in development** by piping through `pino-pretty` outside the
+  process, in the app's `dev` script. Never as a transport.
 - **Context through child loggers**, not string interpolation: always
   `service`; where applicable `source`, `jobId`, `storyId`.
 - **Levels mean something:**
@@ -64,44 +113,100 @@ Known constraints:
   - `warn` — degraded but handled (e.g. a source's circuit breaker opened)
   - `info` — lifecycle, and one summary line per job run
   - `debug` — off in production
+- **The level comes from `LOG_LEVEL`**, read by the app's config module.
+- **Errors go under `err`** — `log.error({ err }, "what failed")` — and are
+  serialised with type, message and stack.
 - **Never log** secrets, tokens, full article text, or full prompts and LLM
-  responses. Log IDs, counts and sizes instead.
+  responses. Log IDs, counts and sizes instead. As a safety net, the keys
+  `password`, `token`, `apiKey`, `secret`, `authorization`, `cookie`,
+  `databaseUrl` and `redisUrl` are redacted at the top level and one level
+  down — a net, not a licence.
 - **Log an error once**, where it is handled — not again at every layer on the
   way up.
 
-Still to decide: library (pino is the obvious candidate), redaction config,
-request correlation in `apps/web`.
+Still open: request correlation in `apps/web` — decided when the web app gets
+real API routes (phase 4).
 
-**Enforcement:** ESLint `no-console`.
+**Enforcement:** ESLint `no-console` (`eslint.config.js`).
 
 ## Configuration and secrets
 
-**Status:** `open` · settle in phase 0
+**Status:** `settled` · reference: `apps/worker/src/config.ts`,
+`packages/core/src/env.ts`
 
-- Each app reads environment variables in **exactly one module**, parses them
-  with Zod at startup and fails fast on anything missing or malformed.
-  Everything else imports the typed config object.
+- Each app reads environment variables in **exactly one module**,
+  `src/config.ts`: a Zod schema parsed with `parseEnv` from `@astra/core/env`,
+  which reports every problem at once and never echoes the values. Everything
+  else imports the typed result.
+- **Fail fast:** the worker parses on import, before anything connects.
+- **The web app parses lazily** — `config()` in `apps/web/src/config.ts` —
+  because `next build` loads route modules without a runtime environment.
+  `instrumentation-node.ts` calls it at server start and exits on failure;
+  Next.js would otherwise log the error and go on answering with 500s.
+- **Local development uses one `.env` at the repository root**, copied from
+  `.env.example`. Scripts load it with Node's `--env-file-if-exists`; the web
+  app with `process.loadEnvFile` in `next.config.ts`, because Next.js hands
+  Node flags to its child processes through `NODE_OPTIONS`, where
+  `--env-file` is not allowed. Variables already set in the shell win.
 - A new variable goes into `.env.example` in the same commit.
-- No secrets in the repository (`CLAUDE.md`).
+- No secrets in the repository (`CLAUDE.md`). Production values live in a
+  `chmod 600` env file on the server.
 
-**Enforcement:** lint rule against `process.env` outside the config module.
+**Enforcement:** ESLint `no-restricted-properties` on `process.env` and
+`no-restricted-imports` on `env` from `process`, except in the files listed as
+`envReaders` in `eslint.config.js`.
 
 ## Time and IDs
 
-**Status:** `open` · settle in phase 0
+**Status:** `settled` · reference: `packages/db/src/schema.ts`
 
-- Timestamps are `timestamptz`, stored in UTC. Conversion to `Europe/Zurich`
-  happens only at the edge (UI, Telegram messages).
-- Still to decide: primary key type (serial vs. UUIDv7), date library (if any).
+- **Primary keys are `bigint` identity columns** (`generated always as
+  identity`), assigned by the database. There is one database and no
+  distributed ID generation, so UUIDs would buy nothing; 8-byte keys keep
+  indexes and foreign keys small and IDs readable in logs, URLs and the admin
+  view. In TypeScript they are `number`. Foreign keys are `bigint` as well.
+- **Timestamps are `timestamptz`**, stored in UTC. Conversion to
+  `Europe/Zurich` happens only at the edge (UI, Telegram messages).
+- **No date library.** `Date` for instants; `Intl.DateTimeFormat` with
+  `timeZone: "Europe/Zurich"` for display. Revisit once `Temporal` ships
+  unflagged in the Node LTS we run (Node 24 has it behind a flag only).
+- **Money is `numeric`**, never a float: `cost_usd` is `numeric(12, 6)`.
+
+**Enforcement:** the column helpers `id()`, `foreignId()` and `timestamptz()`
+in `schema.ts` — new tables use them rather than spelling columns out.
 
 ## Background jobs
 
-**Status:** `open` · settle in phase 0
+**Status:** `settled` · reference: `apps/worker/src/jobs/`
 
-- Every job run writes one `job_runs` row: start, end, status, item counts,
-  `cost_usd` where applicable.
+- **A job is a `defineJob({ name, queue, data, schedule?, run })`** in its own
+  module, listed in `jobs/registry.ts` — a job missing there is neither
+  scheduled nor processed. `name` is unique; it doubles as the BullMQ job name,
+  the scheduler ID and `job_runs.job_name`.
+- **Job data is parsed** with the job's Zod schema before `run`: it comes out
+  of Redis like any external input. Malformed data fails at once, without
+  retries.
+- **Every attempt writes one `job_runs` row**: job ID, attempt, status, item
+  counts, `cost_usd`, error. A job reports through `ctx.stats` (`itemsIn`,
+  `itemsOut`, `costUsd`), and the runner records the stats on failure too —
+  money spent before an error is never lost.
+- **The runner logs** one summary line per attempt: `info` on success, `error`
+  on failure. Jobs log through `ctx.log`, already bound to job, job ID and
+  attempt, and throw rather than log their own failure.
 - Jobs are **idempotent** — a retry must never create duplicates.
-- Still to decide: how a job is defined and registered with BullMQ.
+- **Retries:** three attempts with exponential backoff from 30 s
+  (`defaultJobOptions`, set on every queue). Redis keeps finished jobs for a
+  day and failed ones for a week; `job_runs` is the history.
+- **Schedules** are cron patterns in UTC. The worker syncs them to BullMQ job
+  schedulers at every start and removes schedulers whose job is gone — so the
+  scheduler runs inside the worker, with no container of its own.
+- **Queues** are declared in `QUEUES` with their concurrency. Phase 0 has one,
+  `system`.
+- **Shutdown:** on `SIGTERM` the worker lets running jobs finish; the
+  container's stop grace period must outlast the longest job.
+
+**Enforcement:** the registry, plus `registry.test.ts` (unique names, schedule
+data valid for its job).
 
 ## Errors
 

@@ -1,0 +1,14 @@
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  // The documents are wrapped by hand (docs/07-conventions.md#formatting).
+  "[markdown]": {
+    "editor.formatOnSave": false
+  },
+  // The workspace's TypeScript 6.0, not the version bundled with VS Code.
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true
+}

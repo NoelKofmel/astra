@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    // Node 24 runs the TypeScript sources directly (type stripping) — nothing
+    // is ever emitted. Relative imports therefore carry the .ts extension.
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true,
+
+    "target": "es2025",
+    "lib": ["es2025"],
+    "module": "nodenext",
+    "moduleDetection": "force",
+    "types": ["node"],
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true
+  }
+}

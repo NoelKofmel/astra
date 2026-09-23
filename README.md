@@ -4,7 +4,7 @@
 > the same story surfaces everywhere at once, summarises and explains it with
 > AI — and only speaks up when something is genuinely relevant.
 
-**Status:** Planning complete. Implementation not started.
+**Status:** Phase 0 (foundation) in progress — see the [roadmap](docs/05-roadmap.md).
 
 > **About the docs:** everything here is a **guide, not a manual.** The documents
 > capture direction and reasoning so the same decision doesn't have to be made
@@ -47,6 +47,7 @@ clustering for free.
 | [`docs/05-roadmap.md`](docs/05-roadmap.md) | Phased plan with definition of done |
 | [`docs/06-decisions.md`](docs/06-decisions.md) | Decision log (ADRs) |
 | [`docs/07-conventions.md`](docs/07-conventions.md) | How cross-cutting concerns are done — one way each |
+| [`docs/08-operations.md`](docs/08-operations.md) | Server setup, deploys, backups and restores |
 | [`CLAUDE.md`](CLAUDE.md) | Project context for Claude Code sessions |
 
 ## At a glance
@@ -62,7 +63,7 @@ clustering for free.
 ## Stack
 
 Next.js 16 · React 19 · TypeScript · Tailwind CSS v4 · Drizzle ORM ·
-PostgreSQL 17 + pgvector · Redis + BullMQ · react-three-fiber ·
+PostgreSQL 18 + pgvector · Redis + BullMQ · react-three-fiber ·
 Anthropic API · Voyage AI embeddings
 
 ## Language

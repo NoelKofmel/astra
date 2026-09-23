@@ -6,21 +6,23 @@ node_modules/
 !.yarn/patches
 !.yarn/releases
 
-# Build-Output
+# Build output
 .next/
 out/
 build/
 dist/
 *.tsbuildinfo
+next-env.d.ts
+.turbo/
 
-# Environment — NIEMALS committen
+# Environment — never commit
 .env
 .env.local
 .env.*.local
 .env.production
 !.env.example
 
-# Secrets & Keys
+# Secrets & keys
 *.pem
 *.key
 secrets/
@@ -31,12 +33,12 @@ npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*
 
-# Datenbank-Dumps & Backups
+# Database dumps & backups
 *.dump
 *.sql.gz
 backups/
 
-# Blender — Arbeitsdateien versionieren, Renders nicht
+# Blender — version the working files, not the renders
 *.blend1
 *.blend2
 /assets/renders/
@@ -51,11 +53,11 @@ backups/
 !.vscode/settings.json
 .idea/
 
-# Test & Coverage
+# Test & coverage
 coverage/
 .nyc_output/
 playwright-report/
 test-results/
 
-# Lokale Claude-Konfiguration (settings.json wird geteilt, .local nicht)
+# Local Claude configuration (settings.json is shared, .local is not)
 .claude/settings.local.json
