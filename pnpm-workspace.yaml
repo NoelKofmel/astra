@@ -12,12 +12,12 @@ catalog:
   zod: ^4.6.0
   # next and its lint config are released together — keep them in step.
   next: ^16.3.0
-  "@next/env": ^16.3.0
   eslint-config-next: ^16.3.0
 
 # Dependency install scripts are denied unless listed here (pnpm default).
 allowBuilds:
-  # Both only verify or fetch a native binary that already arrives as an
-  # optional dependency.
+  # Each only verifies, fetches or compiles a native binary that already
+  # arrives prebuilt as an optional dependency.
   esbuild: false
+  msgpackr-extract: false
   unrs-resolver: false

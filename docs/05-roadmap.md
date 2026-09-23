@@ -17,7 +17,7 @@ yet, but everything is wired up.
 - [x] `docker-compose.dev.yml` — Postgres 18 + pgvector, Redis
 - [x] Drizzle schema + first migration (every table from `01-architecture.md`)
 - [ ] Next.js skeleton with a healthcheck route
-- [ ] Worker skeleton with BullMQ and one dummy job
+- [x] Worker skeleton with BullMQ and one dummy job
 - [ ] GitHub Actions: lint → typecheck → test → build
 - [ ] Settle the phase-0 conventions — logging, config, time/IDs, jobs
       (`07-conventions.md`) — including the lint rules that enforce them

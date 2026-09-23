@@ -108,7 +108,7 @@ worse than no notification at all.
 |---|---|---|
 | `web` | Node 24 · Next.js 16 | UI + API routes |
 | `worker` | Node 24 | Collectors, enrichment, clustering (BullMQ consumers) |
-| `scheduler` | Node 24 | Cron → BullMQ jobs (may run inside the worker) |
+| `scheduler` | — | Cron → BullMQ job schedulers; runs inside the worker (settled in phase 0) |
 | `postgres` | `pgvector/pgvector:0.8.6-pg18` | Everything persistent |
 | `redis` | `redis:8.10-alpine` | BullMQ queue + cache |
 | `caddy` | `caddy:2-alpine` | Reverse proxy, automatic TLS |
