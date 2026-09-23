@@ -1,14 +1,16 @@
-name: CI
+name: CI/CD
 
+# push to main: check → images → deploy.  Pull requests: check only.
 on:
   push:
     branches: [main]
   pull_request:
 
-# A newer push to the same branch makes the running check pointless.
+# A newer push to a pull request makes its running check pointless. On main
+# nothing is cancelled: a deploy must never stop halfway through.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -69,3 +71,110 @@ jobs:
           fi
 
       - run: pnpm build
+
+  images:
+    name: Image (${{ matrix.target }})
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        target: [web, worker]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Image name
+        id: image
+        # GHCR wants lowercase; infra/docker-compose.yml uses the same names.
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/astra-${{ matrix.target }}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          target: ${{ matrix.target }}
+          build-args: APP_VERSION=${{ github.sha }}
+          push: true
+          tags: |
+            ${{ steps.image.outputs.name }}:${{ github.sha }}
+            ${{ steps.image.outputs.name }}:latest
+          labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          cache-from: type=gha,scope=${{ matrix.target }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.target }}
+
+  deploy:
+    name: Deploy
+    needs: images
+    # Switched on by setting the repository variable ASTRA_URL (docs/08-operations.md).
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.ASTRA_URL != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: ${{ vars.ASTRA_URL }}
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Configure SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          cat > ~/.ssh/config <<EOF
+          Host astra
+            HostName ${DEPLOY_HOST}
+            User deploy
+            IdentityFile ~/.ssh/deploy_key
+            BatchMode yes
+          EOF
+
+      - name: Copy compose file, Caddyfile and scripts
+        run: |
+          scp infra/docker-compose.yml infra/deploy.sh infra/backup.sh astra:/opt/astra/
+          scp infra/caddy/Caddyfile astra:/opt/astra/caddy/
+
+      - name: Let the server pull from GHCR for this deploy
+        env:
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s' "$GHCR_TOKEN" | ssh astra docker login ghcr.io --username "$GHCR_USER" --password-stdin
+
+      - name: Deploy
+        run: |
+          # Expanded on the runner on purpose — the server does not know the SHA.
+          # shellcheck disable=SC2029
+          ssh astra bash /opt/astra/deploy.sh "$GITHUB_SHA"
+
+      - name: Log the server out of GHCR
+        if: always()
+        run: ssh astra docker logout ghcr.io || true
+
+      - name: Verify the new release is live
+        env:
+          ASTRA_URL: ${{ vars.ASTRA_URL }}
+        run: |
+          health="$(curl --fail --silent --show-error --retry 10 --retry-all-errors --retry-delay 3 "${ASTRA_URL}/api/health")"
+          echo "$health"
+          test "$(jq -r .version <<< "$health")" = "$GITHUB_SHA"
