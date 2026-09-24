@@ -19,15 +19,16 @@ one or two reading guests.
 
 ## Status
 
-**Phase 0 (foundation) in progress** (`docs/05-roadmap.md`). Built and tested
-locally: monorepo, Drizzle schema and migrations, web and worker skeletons, CI,
-Docker images, deploy pipeline, server provisioning and backups as code. Not
-live yet.
+**Phase 0 (foundation) in progress** (`docs/05-roadmap.md`). Merged to `main`
+(PR #1): monorepo, Drizzle schema and migrations, web and worker skeletons, CI,
+Docker images, deploy pipeline, server provisioning and backups as code. CI and
+SonarQube run green on GitHub, and `main` pushes both images to GHCR. Not live
+yet. The domain is `astranews.ch`, registered at Hostpoint, which also hosts
+its DNS zone.
 
-Next up — all manual, step by step in `docs/08-operations.md`: open a pull
-request from `phase-0` (CI and SonarQube run on pull requests and on `main`,
-not on branch pushes) and merge it; register a domain; create the server with
-cloud-init (steps 1–6); DNS and TLS (step 7); Storage Box and backups (step 8).
+Next up — manual, step by step in `docs/08-operations.md`: create the server
+with cloud-init, point the DNS at it, GitHub environment and secrets, first
+deploy with TLS, then Storage Box and backups.
 
 ## Language — binding
 
@@ -200,4 +201,3 @@ context in every session.
 ## Open items
 
 - [ ] Decide typography direction A or B (`docs/04-design.md`)
-- [ ] Register a domain
