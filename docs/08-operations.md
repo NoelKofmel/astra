@@ -52,31 +52,84 @@ ssh-keygen -t ed25519 -f ~/.ssh/astra-deploy -C astra-ci -N ""
 
 ### 2. Create the server
 
+Fill in the cloud config locally and paste it whole — never edit it in the
+browser field. Doing that once left a single line of it, and the server came
+up unconfigured:
+
+```bash
+K_ADMIN="$(cat ~/.ssh/id_ed25519.pub)" K_CI="$(cat ~/.ssh/astra-deploy.pub)" \
+ACME=you@example.com perl -pe '
+  s/REPLACE_WITH_YOUR_PUBLIC_KEY/$ENV{K_ADMIN}/;
+  s/REPLACE_WITH_CI_DEPLOY_PUBLIC_KEY/$ENV{K_CI}/;
+  s/REPLACE_WITH_YOUR_EMAIL/$ENV{ACME}/' infra/server/cloud-init.yaml | pbcopy
+```
+
+Compose requires `ACME_EMAIL`, but it carries little weight: Let's Encrypt
+stopped sending expiry emails in June 2025 and no longer stores the address.
+ZeroSSL, Caddy's fallback CA, uses it as the account address.
+
 Hetzner Console → *Add Server*:
 
-- **Location** Nuremberg or Falkenstein · **Image** Ubuntu 24.04 · **Type**
-  CX32, or its current equivalent with 4 vCPU / 8 GB · **Name** `astra`
-- **Firewall:** create one that allows inbound TCP 22, 80, 443 and UDP 443.
-  UFW runs on the server as well, but Docker-published ports bypass UFW; the
-  Hetzner firewall sits in front of everything.
-- **Cloud config:** paste `infra/server/cloud-init.yaml` after replacing:
-  - `REPLACE_WITH_YOUR_PUBLIC_KEY` — the content of `~/.ssh/id_ed25519.pub`
-  - `REPLACE_WITH_CI_DEPLOY_PUBLIC_KEY` — the content of `~/.ssh/astra-deploy.pub`
-  - `REPLACE_WITH_YOUR_EMAIL` — for Let's Encrypt expiry notices
+- **Location** Falkenstein (Nuremberg and Helsinki work too) · **Image**
+  Ubuntu 24.04 · **Name** `astra`
+- **Type:** x86 only — the images are built for amd64. The target is the
+  **CX33**; while the cost-optimized line is unavailable, a **CPX12** carries
+  phase 0 ([`01-architecture.md`](01-architecture.md#deployment)).
+- **Networking:** public IPv4 and IPv6. IPv4 is required: GitHub's runners
+  have no IPv6.
+- **SSH key:** select your personal key, or Hetzner mails a root password.
+  cloud-init disables root login either way.
+- **Firewall:** create one that allows inbound TCP 22, 80, 443 and UDP 443,
+  each from *Any IPv4* and *Any IPv6*. UFW runs on the server as well, but
+  Docker-published ports bypass UFW; the Hetzner firewall sits in front of
+  everything.
+- **Cloud config:** paste from the clipboard. The first line must be
+  `#cloud-config`.
 
 The server installs, hardens and reboots itself — about five minutes.
 
-### 3. First login and checks
+Switch off *auto delete* on both Primary IPs. A replacement server in the same
+location can then take them over, and DNS stays as it is — remove the old host
+keys with `ssh-keygen -R <ipv4>` and update `DEPLOY_KNOWN_HOSTS` (step 6).
+
+### 3. DNS
+
+Point the domain at the server right away. With a TTL of 300 seconds the
+records have spread long before Caddy asks for a certificate in step 7.
+
+`astranews.ch` is registered at Hostpoint, which also hosts the zone (Control
+Panel → *Domains* → the domain → *DNS Editor öffnen*). Overwrite the parking
+records Hostpoint created:
+
+| Name | Type | Value |
+|---|---|---|
+| `astranews.ch` | A | the IPv4 |
+| `astranews.ch` | AAAA | the IPv6 network with `::1` as the host part |
+| `*.astranews.ch` | A, AAAA | the same |
+
+The wildcard sends `www` and later subdomains to the server; Caddy answers only
+for `ASTRA_DOMAIN` and has no certificate for anything else. MX, SPF and DMARC
+stay as Hostpoint set them.
+
+```bash
+dig +short astranews.ch @1.1.1.1      # the IPv4
+```
+
+### 4. First login and checks
 
 ```bash
 ssh noel@<ipv4>                 # confirm the host key fingerprint once
-cloud-init status --long        # status: done, no errors
+cloud-init status --long        # status: done, no errors or warnings
 sudo ufw status verbose         # 22 (limit), 80, 443
 systemctl is-active docker fail2ban
 ssh root@<ipv4>                 # must be refused
 ```
 
-### 4. The server's `.env`
+`status: running` means it is not finished — wait for the reboot. A warning
+*Unhandled non-multipart userdata* means the pasted cloud config was not
+recognised: delete the server and start again at step 2.
+
+### 5. The server's `.env`
 
 cloud-init generated `POSTGRES_PASSWORD` and `RESTIC_PASSWORD`.
 
@@ -86,37 +139,54 @@ sudo -e /opt/astra/.env
 
 - **Copy `RESTIC_PASSWORD` into your password manager now.** The backups are
   encrypted with it; if the server is lost, so is every backup without it.
-- `ASTRA_DOMAIN` stays `:80` (plain HTTP on the IP) until DNS is in place
-  (step 7).
+- Set `ASTRA_DOMAIN=astranews.ch` — the bare name, without the colon of the
+  `:80` it replaces. `:80` is a port: plain HTTP on the IP, for debugging
+  without DNS, together with `ASTRA_URL=http://<ipv4>` in step 6.
 
-### 5. GitHub
+### 6. GitHub
 
-Repository → *Settings*:
-
-- *Environments* → create `production` (optionally: require your approval).
-- *Secrets and variables → Actions → Secrets*:
-  - `DEPLOY_HOST` — the server's IPv4
-  - `DEPLOY_SSH_KEY` — the **private** key, `cat ~/.ssh/astra-deploy`
-  - `DEPLOY_KNOWN_HOSTS` — `ssh-keygen -F <ipv4>` prints the line your first
-    login verified; paste it without the comment line
-- *Variables*: `ASTRA_URL` = `http://<ipv4>` for now. **Setting it switches
-  deploys on**; without it, `main` only builds images.
-
-### 6. First deploy
-
-Merge to `main`. The pipeline checks, builds both images into GHCR, deploys
-and verifies that `/api/health` reports the new commit. By hand:
+The deploy secrets belong to the environment `production`, which only `main`
+may deploy to — so no workflow on another branch can read the deploy key,
+which is as good as root. With `gh`:
 
 ```bash
-curl http://<ipv4>/api/health    # {"ok":true,"version":"<sha>",...}
+repo=NoelKofmel/astra
+gh api -X PUT repos/$repo/environments/production --input - <<'JSON'
+{"deployment_branch_policy":{"protected_branches":false,"custom_branch_policies":true}}
+JSON
+gh api -X POST repos/$repo/environments/production/deployment-branch-policies \
+  -f name=main -f type=branch
+
+gh secret set DEPLOY_HOST --env production --body <ipv4>
+gh secret set DEPLOY_SSH_KEY --env production < ~/.ssh/astra-deploy
+ssh-keygen -F <ipv4> | grep -v '^#' | gh secret set DEPLOY_KNOWN_HOSTS --env production
+
+gh variable set ASTRA_URL --body https://astranews.ch
 ```
 
-### 7. Domain and TLS
+`DEPLOY_KNOWN_HOSTS` holds the host keys your first login accepted.
+`ASTRA_URL` is a repository variable, not an environment one: the deploy job's
+`if` reads it before the environment applies. **Setting it switches deploys
+on**; without it, `main` only builds images.
 
-1. DNS: an `A` record to the IPv4, an `AAAA` record to the IPv6.
-2. On the server, set `ASTRA_DOMAIN=<domain>` in `.env`, then recreate Caddy:
-   `sudo -iu deploy`, `dc up -d caddy`. It fetches the certificate itself.
-3. Set the GitHub variable `ASTRA_URL` to `https://<domain>`.
+### 7. First deploy
+
+Merge to `main` — or, with nothing to merge, run the latest `main` pipeline
+again: `gh run rerun <run-id>`. The pipeline checks, builds both images into
+GHCR, deploys and verifies that `/api/health` reports the new commit. Caddy
+fetches the certificate on its first start.
+
+```bash
+curl https://astranews.ch/api/health    # {"ok":true,"version":"<sha>",...}
+```
+
+Within minutes of the certificate, scanners that watch the public
+Certificate Transparency logs start probing for `/.env`, `/.git/config` and
+the like. They get 404s; that is background noise, not an incident.
+
+IPv6 clients reach Caddy through Docker's userland proxy, so its logs show them
+as the Compose network's gateway (`172.18.0.1`): the network is IPv4-only.
+Harmless for now; enable IPv6 on the network once real client addresses matter.
 
 ### 8. Backups
 
@@ -200,7 +270,7 @@ release:
 |---|---|
 | What runs, and is it healthy | `dc ps` |
 | Logs | `dc logs -f --since 10m worker` |
-| Health from outside | `curl https://<domain>/api/health` |
+| Health from outside | `curl https://astranews.ch/api/health` |
 | Recent jobs | `dc exec postgres psql -U astra -c 'select job_name, status, started_at from job_runs order by id desc limit 10'` |
 | Last backup | `journalctl -u astra-backup -n 5` |
 

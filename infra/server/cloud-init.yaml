@@ -1,11 +1,13 @@
 #cloud-config
-# Astra production server: Ubuntu 24.04 on a Hetzner CX32.
+# Astra production server: Ubuntu 24.04 on a Hetzner cloud server (x86).
 #
 # Paste into "Cloud config" when creating the server in the Hetzner Console —
-# docs/08-operations.md walks through it. Replace the three REPLACE_ values
-# first. On first boot this hardens SSH, enables the firewall, fail2ban and
-# automatic security updates, installs Docker, prepares /opt/astra for the
-# deploy pipeline with freshly generated secrets, and reboots.
+# docs/08-operations.md walks through it, including the one-liner that fills
+# in the three REPLACE_ values. Paste the whole result; never edit it in the
+# browser field. On first boot this hardens SSH, enables the firewall,
+# fail2ban and automatic security updates, installs Docker, prepares
+# /opt/astra for the deploy pipeline with freshly generated secrets, and
+# reboots.
 #
 # Later changes to server-level settings are not re-applied automatically:
 # make them here and on the server by hand, or rebuild the server.
