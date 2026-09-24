@@ -21,18 +21,17 @@ yet, but everything is wired up.
 - [x] GitHub Actions: lint → typecheck → test → build
 - [x] Settle the phase-0 conventions — logging, config, time/IDs, jobs
       (`07-conventions.md`) — including the lint rules that enforce them
-- [ ] Provision the Hetzner CX32 and **harden it** (SSH keys only, UFW,
-      fail2ban, unattended-upgrades)
-- [ ] Domain + Caddy with automatic TLS
-- [ ] Deploy pipeline: GHCR image → SSH → `docker compose up -d`
+- [x] Provision the Hetzner server and **harden it** (SSH keys only, UFW,
+      fail2ban, unattended-upgrades) — a CPX12 until the CX33 is available
+      (`01-architecture.md`)
+- [x] Domain + Caddy with automatic TLS
+- [x] Deploy pipeline: GHCR image → SSH → `docker compose up -d`
 - [ ] Nightly `pg_dump` to the storage box
 
-> **State on 2026-09-24:** CI runs on GitHub — green on the pull request and on
-> `main`, which pushes both images to GHCR. The domain is `astranews.ch`
-> (Hostpoint). Every other unchecked item exists as code and was tested locally
-> — `infra/server/cloud-init.yaml`, `infra/caddy/Caddyfile`, `infra/deploy.sh`,
-> `infra/backup.sh`. What is left is manual: create the server, point the DNS at
-> it, set the GitHub secrets, order the Storage Box. Step by step in
+> **State on 2026-09-24:** live at `https://astranews.ch`. The first deploy was
+> a re-run of the `main` pipeline; it deployed, fetched the certificate and
+> verified `/api/health`. Left: the Storage Box for the nightly backup, and the
+> next merge to `main` — the first deploy triggered by a push. Step by step in
 > [`08-operations.md`](08-operations.md).
 
 **Done when:** `git push` to `main` deploys automatically and
