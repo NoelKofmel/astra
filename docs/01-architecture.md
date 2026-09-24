@@ -257,12 +257,19 @@ dies quietly. `job_id` and `attempt` tie a row to BullMQ and to the logs.
 
 ## Deployment
 
-**Server:** Hetzner CX32 (4 vCPU, 8 GB RAM, 80 GB SSD, ~7 EUR/month),
-Ubuntu 24.04, Nuremberg or Helsinki.
+**Server:** Hetzner, Ubuntu 24.04, Falkenstein. The target size is the **CX33**
+(4 vCPU, 8 GB RAM, 80 GB SSD, 8.49 EUR/month since June 2026), successor of the
+retired CX32. Production runs on a **CPX12** (1 vCPU, 2 GB RAM, 40 GB SSD,
+11.49 EUR/month) for now: on 2026-09-24 Hetzner's cost-optimized line was
+unavailable, and phase 0 needs little — the server builds nothing, it only runs
+the images. Rescale to the CX33 once it is available again, since it is both
+larger and cheaper, or to a larger CPX as soon as memory gets tight
+(`free -h`, `docker stats`). A rescale keeps IPs and data and costs a few
+minutes of downtime. Prices exclude VAT.
 
-> Why CX32 over the cheaper CX22 (4 GB): Postgres with pgvector, Redis, two Node
-> processes and later Grafana only just fit into 4 GB. The 2.50 EUR difference
-> is cheaper than an OOM kill at three in the morning.
+> Why 8 GB rather than 4 as the target: Postgres with pgvector, Redis, two Node
+> processes and later Grafana only just fit into 4 GB. A few euros a month are
+> cheaper than an OOM kill at three in the morning.
 
 **Hardening** (day one, before the first deploy): SSH keys only, root login
 disabled, UFW limited to 22/80/443, fail2ban, unattended-upgrades. Not optional.

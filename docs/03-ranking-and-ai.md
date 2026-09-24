@@ -109,8 +109,8 @@ interface EmbeddingProvider {
 ```
 
 Later alternative: `bge-m3` locally in a small ONNX service. Free and
-independent, but needs ~2.5 GB of RAM. Feasible on the CX32, though only once
-everything else is stable — the operational overhead exceeds the nine cents it
+independent, but needs ~2.5 GB of RAM. Feasible on the CX33 (not on the CPX12
+production starts on), though only once everything else is stable — the operational overhead exceeds the nine cents it
 saves.
 
 ---
@@ -212,13 +212,16 @@ Plus infrastructure:
 
 | Item | CHF/month |
 |---|---|
-| Hetzner CX32 | ~6.50 |
+| Hetzner CPX12, for now | ~11.60 |
 | Domain | ~1.50 |
 | Backup storage | ~1.00 |
 | AI (above, ~$14.6) | ~11.70 |
-| **Total** | **~20.70** |
+| **Total** | **~25.80** |
 
-Inside the 25–30 CHF budget, with room to experiment.
+Inside the 25–30 CHF budget, though with little room while the server is a
+CPX12. The CX33 (~8.60 CHF), which it should become
+([`01-architecture.md`](01-architecture.md#deployment)), brings the total back
+to ~22.80.
 
 **Cost control** from phase 3, not later:
 - Every API call writes `cost_usd` into `job_runs`

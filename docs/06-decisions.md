@@ -34,6 +34,10 @@ live faster.
 
 **Decision:** Hetzner CX32, Docker Compose, Caddy, GitHub Actions.
 
+> **2026-09-24:** Hetzner has retired the CX32. Its same-sized successor, the
+> CX33, was unavailable, so production started on a smaller CPX12 — see
+> [`01-architecture.md`](01-architecture.md#deployment). The decision stands.
+
 **Consequences:**
 - Maximum learning value exactly where he is growing professionally
 - Full control over cron, long-running workers and WebSocket connections — all

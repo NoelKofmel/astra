@@ -19,15 +19,15 @@ one or two reading guests.
 
 ## Status
 
-**Phase 0 (foundation) in progress** (`docs/05-roadmap.md`). Built and tested
-locally: monorepo, Drizzle schema and migrations, web and worker skeletons, CI,
-Docker images, deploy pipeline, server provisioning and backups as code. Not
-live yet.
+**Phase 0 (foundation) nearly done** (`docs/05-roadmap.md`). **Live at
+`https://astranews.ch`** since 2026-09-24: a Hetzner CPX12 in Falkenstein
+(`188.245.171.28`), provisioned by cloud-init and deployed by the pipeline on
+every push to `main`, with TLS from Let's Encrypt through Caddy. The domain is
+registered at Hostpoint, which also hosts its DNS zone.
 
-Next up — all manual, step by step in `docs/08-operations.md`: open a pull
-request from `phase-0` (CI and SonarQube run on pull requests and on `main`,
-not on branch pushes) and merge it; register a domain; create the server with
-cloud-init (steps 1–6); DNS and TLS (step 7); Storage Box and backups (step 8).
+Next up — step 8 in `docs/08-operations.md`: order the Storage Box and set up
+the nightly backup. Until then the backup timer fails every night, on purpose.
+Then phase 1.
 
 ## Language — binding
 
@@ -71,7 +71,8 @@ react-three-fiber · Zod · Vitest + Playwright
 Monorepo: pnpm workspaces + Turborepo.
 `apps/web`, `apps/worker`, `packages/{db,core,ai,ui}`, `infra/`
 
-Deployment: Hetzner CX32 · Docker Compose · Caddy · GitHub Actions → GHCR → SSH
+Deployment: Hetzner CPX12 (CX33 once available) · Docker Compose · Caddy ·
+GitHub Actions → GHCR → SSH
 
 ## Claude API — rules for this project
 
@@ -200,4 +201,3 @@ context in every session.
 ## Open items
 
 - [ ] Decide typography direction A or B (`docs/04-design.md`)
-- [ ] Register a domain
