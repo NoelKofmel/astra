@@ -257,15 +257,14 @@ dies quietly. `job_id` and `attempt` tie a row to BullMQ and to the logs.
 
 ## Deployment
 
-**Server:** Hetzner, Ubuntu 24.04, Falkenstein. The target size is the **CX33**
-(4 vCPU, 8 GB RAM, 80 GB SSD, 8.49 EUR/month since June 2026), successor of the
-retired CX32. Production runs on a **CPX12** (1 vCPU, 2 GB RAM, 40 GB SSD,
-11.49 EUR/month) for now: on 2026-09-24 Hetzner's cost-optimized line was
-unavailable, and phase 0 needs little — the server builds nothing, it only runs
-the images. Rescale to the CX33 once it is available again, since it is both
-larger and cheaper, or to a larger CPX as soon as memory gets tight
-(`free -h`, `docker stats`). A rescale keeps IPs and data and costs a few
-minutes of downtime. Prices exclude VAT.
+**Server:** Hetzner, Ubuntu 24.04, Falkenstein: a **CAX21** — Arm64, 4 vCPU,
+8 GB RAM, 80 GB SSD, 10.49 EUR/month. The target was the x86 **CX33** of the
+same size, but it has been unavailable since September 2026. Production started
+on an interim **CPX12** (1 vCPU, 2 GB) on 2026-09-24 and moved to the CAX21 on
+2026-11-02 ([ADR-014](06-decisions.md)). When memory gets tight (`free -h`,
+`docker stats`), rescale to a CAX31: within one architecture, a rescale keeps
+IPs and data and costs a few minutes of downtime. Prices exclude VAT and the
+IPv4 address.
 
 > Why 8 GB rather than 4 as the target: Postgres with pgvector, Redis, two Node
 > processes and later Grafana only just fit into 4 GB. A few euros a month are

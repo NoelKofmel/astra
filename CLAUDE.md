@@ -20,9 +20,10 @@ one or two reading guests.
 ## Status
 
 **Phase 0 (foundation) nearly done** (`docs/05-roadmap.md`). **Live at
-`https://astranews.ch`** since 2026-09-24: a Hetzner CPX12 in Falkenstein
-(`188.245.171.28`), provisioned by cloud-init and deployed by the pipeline on
-every push to `main`, with TLS from Let's Encrypt through Caddy. The domain is
+`https://astranews.ch`** since 2026-09-24, since 2026-11-02 on a Hetzner CAX21
+(Arm64) in Falkenstein (`2.31.166.175`), provisioned by cloud-init and deployed
+by the pipeline on every push to `main`, with TLS from Let's Encrypt through
+Caddy. The domain is
 registered at Hostpoint, which also hosts its DNS zone.
 
 Next up — step 8 in `docs/08-operations.md`: order the Storage Box and set up
@@ -71,8 +72,8 @@ react-three-fiber · Zod · Vitest + Playwright
 Monorepo: pnpm workspaces + Turborepo.
 `apps/web`, `apps/worker`, `packages/{db,core,ai,ui}`, `infra/`
 
-Deployment: Hetzner CPX12 (CX33 once available) · Docker Compose · Caddy ·
-GitHub Actions → GHCR → SSH
+Deployment: Hetzner CAX21 (Arm64) · Docker Compose · Caddy · GitHub Actions →
+GHCR → SSH
 
 ## Claude API — rules for this project
 
