@@ -1,5 +1,5 @@
 #cloud-config
-# Astra production server: Ubuntu 24.04 on a Hetzner cloud server (x86).
+# Astra production server: Ubuntu 24.04 on a Hetzner cloud server (Arm64).
 #
 # Paste into "Cloud config" when creating the server in the Hetzner Console —
 # docs/08-operations.md walks through it, including the one-liner that fills

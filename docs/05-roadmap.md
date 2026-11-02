@@ -22,8 +22,8 @@ yet, but everything is wired up.
 - [x] Settle the phase-0 conventions — logging, config, time/IDs, jobs
       (`07-conventions.md`) — including the lint rules that enforce them
 - [x] Provision the Hetzner server and **harden it** (SSH keys only, UFW,
-      fail2ban, unattended-upgrades) — a CPX12 until the CX33 is available
-      (`01-architecture.md`)
+      fail2ban, unattended-upgrades) — an Arm64 CAX21 since 2026-11-02,
+      after an interim CPX12 (ADR-014)
 - [x] Domain + Caddy with automatic TLS
 - [x] Deploy pipeline: GHCR image → SSH → `docker compose up -d`
 - [ ] Nightly `pg_dump` to the storage box

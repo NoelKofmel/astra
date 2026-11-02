@@ -37,6 +37,9 @@ live faster.
 > **2026-09-24:** Hetzner has retired the CX32. Its same-sized successor, the
 > CX33, was unavailable, so production started on a smaller CPX12 — see
 > [`01-architecture.md`](01-architecture.md#deployment). The decision stands.
+>
+> **2026-11-02:** the CX33 still is. Production moves to the Arm64 CAX21 of
+> the same size instead — ADR-014.
 
 **Consequences:**
 - Maximum learning value exactly where he is growing professionally
@@ -277,6 +280,30 @@ policy is meant to stop.
 - As with X (ADR-004), the `Collector` interface keeps the door open: should
   access become possible later, Reddit is one adapter among many
 - **Testable:** the same source trust check from phase 4 applies
+
+---
+
+## ADR-014 — Production on Arm64
+
+**Status:** accepted · 2026-11-02
+
+**Context:** the target server, the x86 CX33, has been unavailable since
+September 2026; production still runs on the interim CPX12 (1 vCPU, 2 GB). Its
+Arm64 counterpart, the CAX21 — the same 4 vCPU, 8 GB and 80 GB — is available.
+
+**Decision:** production moves to a CAX21. The images are built for
+`linux/arm64` only, on GitHub's native Arm runner.
+
+**Consequences:**
+- The size the architecture asks for at 10.49 EUR/month (excl. VAT and IPv4),
+  less than the CPX12's 11.49
+- No rescale: Hetzner cannot change the architecture in place. It is a new
+  server, so the IPs, DNS and deploy secrets change with it
+- x86 types can no longer run the images. Going back means building
+  `linux/amd64` again — one line in `ci.yml`
+- Every base image (Node, Caddy, Postgres with pgvector, Redis) is multi-arch;
+  a new image or native dependency has to be as well — check before adopting it
+- The Arm runner is free only while the repository is public
 
 ---
 

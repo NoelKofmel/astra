@@ -72,9 +72,9 @@ Hetzner Console → *Add Server*:
 
 - **Location** Falkenstein (Nuremberg and Helsinki work too) · **Image**
   Ubuntu 24.04 · **Name** `astra`
-- **Type:** x86 only — the images are built for amd64. The target is the
-  **CX33**; while the cost-optimized line is unavailable, a **CPX12** carries
-  phase 0 ([`01-architecture.md`](01-architecture.md#deployment)).
+- **Type:** Arm64 only — the images are built for `linux/arm64`, so x86
+  types (CX, CPX) cannot run them. Production is a **CAX21**
+  ([`01-architecture.md`](01-architecture.md#deployment), ADR-014).
 - **Networking:** public IPv4 and IPv6. IPv4 is required: GitHub's runners
   have no IPv6.
 - **SSH key:** select your personal key, or Hetzner mails a root password.

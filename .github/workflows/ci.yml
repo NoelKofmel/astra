@@ -113,7 +113,9 @@ jobs:
     name: Image (${{ matrix.target }})
     needs: check
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-24.04
+    # Production is Arm64 (ADR-014). A native runner builds without emulation;
+    # it is free because the repository is public.
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 20
     permissions:
       contents: read
@@ -141,6 +143,7 @@ jobs:
         with:
           context: .
           target: ${{ matrix.target }}
+          platforms: linux/arm64
           build-args: APP_VERSION=${{ github.sha }}
           push: true
           tags: |
