@@ -269,12 +269,20 @@ Always into a scratch database first — never straight over production:
 sudo -iu deploy
 set -a; . /opt/astra/.env; set +a
 restic snapshots --tag postgres
+umask 077    # the dump holds the whole database, and /tmp is shared
 restic dump latest /var/backups/astra/astra.dump > /tmp/astra.dump   # or a snapshot ID
 
 dc exec -T postgres createdb -U astra astra_restore
 dc exec -T postgres pg_restore -U astra -d astra_restore < /tmp/astra.dump
 dc exec -T postgres psql -U astra -d astra_restore -c 'select count(*) from stories'
+
+dc exec -T postgres dropdb -U astra astra_restore    # when done
+rm /tmp/astra.dump
 ```
+
+Tested by hand on 2026-11-05 with that night's snapshot: no errors, and the
+same tables, extensions and row counts as production at the time of the dump.
+`restic check --read-data` reads the whole repository back and verifies it.
 
 To replace production with it: `dc stop web worker`, drop and recreate the
 `astra` database, `pg_restore` into it, `dc start web worker`. A scheduled
