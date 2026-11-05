@@ -68,9 +68,13 @@ https://techcrunch.com/2026/09/08/nvidia-hf
 ```
 
 Resolve redirects (shorteners matter here), strip tracking parameters
-(`utm_*`, `ref`, `fbclid`, `source`), drop the fragment, normalise the trailing
-slash, lowercase the host, remove `www.`. Without this, deduplication is
-impossible — the same URL arrives formatted differently from every source.
+(`utm_*`, `ref`, `fbclid`, `source`, …), drop the fragment and trailing
+slashes, lowercase the host, remove `www.`, upgrade `http` to `https` and sort
+the remaining parameters. Without this, deduplication is impossible — the same
+URL arrives formatted differently from every source.
+
+Everything but the redirects is `canonicalUrl` in `packages/core/src/url.ts`.
+Resolving redirects needs the network, so it comes with the HTTP client.
 
 ### 3. Clusterer
 
