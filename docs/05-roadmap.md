@@ -48,7 +48,7 @@ reachable.
 
 **Goal:** data flows in.
 
-- [ ] `Collector` interface + registry
+- [x] `Collector` interface + registry
 - [ ] Normaliser including **URL canonicalisation** (redirects, UTM, fragments)
 - [ ] Collector: Hacker News (Algolia)
 - [ ] Collector: RSS (~20 feeds, with ETag/Last-Modified)

@@ -32,18 +32,25 @@ other sources are untouched.
 
 ### 1. Collector
 
-One adapter per source behind a shared interface:
+One adapter per kind of source behind a shared interface
+(`apps/worker/src/collectors/collector.ts`):
 
 ```ts
 interface Collector {
-  id: string;                              // "hackernews", "bluesky", ...
-  mode: "poll" | "stream";
-  schedule?: string;                       // cron, only for mode: "poll"
-  collect(ctx: CollectorContext): AsyncIterable<RawItem>;
+  id: string;              // "hackernews", "rss", … — sources.collector
+  schedule: string;        // cron, UTC
+  config: ZodType;         // parses sources.config
+  collect(config, ctx): AsyncIterable<CollectedItem>;
 }
 ```
 
-Two modes, because the sources differ fundamentally:
+A source is a row in `sources` that names its adapter and carries the
+adapter's settings. Every RSS feed is a source of its own, with its own health
+and, later, its own trust score. The context hands `collect` the source's own
+HTTP client, so a rate limit stays with its source.
+
+Two modes, because the sources differ fundamentally — the interface above is
+the polling one; the streaming one takes its shape in phase 1b:
 
 - **poll** — a cron job through BullMQ. HN, RSS, GitHub, arXiv, Hugging Face,
   Product Hunt, Lobsters.
