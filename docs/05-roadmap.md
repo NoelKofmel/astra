@@ -48,7 +48,7 @@ reachable.
 
 **Goal:** data flows in.
 
-- [ ] `Collector` interface + registry
+- [x] `Collector` interface + registry
 - [ ] Normaliser including **URL canonicalisation** (redirects, UTM, fragments)
 - [ ] Collector: Hacker News (Algolia)
 - [ ] Collector: RSS (~20 feeds, with ETag/Last-Modified)
@@ -222,6 +222,9 @@ As the mood and need take you, in no fixed order:
 - **PWA + web push** alongside Telegram
 - **Podcast mode** — TTS over the morning digest
 - **Public blog mode** — curated stories published, then with a privacy policy
+- **General news beyond tech** — politics and other world events, only the few
+  that matter most. A handful of general feeds (SRF, NZZ, Reuters, say) with a
+  far higher importance threshold of their own; the pipeline stays as it is
 
 ---
 

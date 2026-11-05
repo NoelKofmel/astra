@@ -32,7 +32,9 @@ walking item IDs one at a time.
 https://hn.algolia.com/api/v1/search_by_date?tags=story&numericFilters=created_at_i>{ts},points>20
 ```
 
-- **Frequency:** every 15 minutes
+- **Frequency:** every 15 minutes, each time for the whole last 24 hours
+  (≥ 20 points) rather than for what is new since the last run: a story that
+  crosses the threshold late is still found, and the points stay current
 - **Yield:** ~50–150 stories/day above the score threshold
 - **Value:** the best single source for tech news. Most major items land here
   within minutes. `points` and `num_comments` are strong engagement signals for

@@ -32,18 +32,25 @@ other sources are untouched.
 
 ### 1. Collector
 
-One adapter per source behind a shared interface:
+One adapter per kind of source behind a shared interface
+(`apps/worker/src/collectors/collector.ts`):
 
 ```ts
 interface Collector {
-  id: string;                              // "hackernews", "bluesky", ...
-  mode: "poll" | "stream";
-  schedule?: string;                       // cron, only for mode: "poll"
-  collect(ctx: CollectorContext): AsyncIterable<RawItem>;
+  id: string;              // "hackernews", "rss", … — sources.collector
+  schedule: string;        // cron, UTC
+  config: ZodType;         // parses sources.config
+  collect(config, ctx): AsyncIterable<CollectedItem>;
 }
 ```
 
-Two modes, because the sources differ fundamentally:
+A source is a row in `sources` that names its adapter and carries the
+adapter's settings. Every RSS feed is a source of its own, with its own health
+and, later, its own trust score. The context hands `collect` the source's own
+HTTP client, so a rate limit stays with its source.
+
+Two modes, because the sources differ fundamentally — the interface above is
+the polling one; the streaming one takes its shape in phase 1b:
 
 - **poll** — a cron job through BullMQ. HN, RSS, GitHub, arXiv, Hugging Face,
   Product Hunt, Lobsters.
@@ -68,9 +75,13 @@ https://techcrunch.com/2026/09/08/nvidia-hf
 ```
 
 Resolve redirects (shorteners matter here), strip tracking parameters
-(`utm_*`, `ref`, `fbclid`, `source`), drop the fragment, normalise the trailing
-slash, lowercase the host, remove `www.`. Without this, deduplication is
-impossible — the same URL arrives formatted differently from every source.
+(`utm_*`, `ref`, `fbclid`, `source`, …), drop the fragment and trailing
+slashes, lowercase the host, remove `www.`, upgrade `http` to `https` and sort
+the remaining parameters. Without this, deduplication is impossible — the same
+URL arrives formatted differently from every source.
+
+Everything but the redirects is `canonicalUrl` in `packages/core/src/url.ts`.
+Resolving redirects needs the network, so it comes with the HTTP client.
 
 ### 3. Clusterer
 

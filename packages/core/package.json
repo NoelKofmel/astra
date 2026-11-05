@@ -4,7 +4,9 @@
   "type": "module",
   "exports": {
     "./env": "./src/env.ts",
-    "./logger": "./src/logger.ts"
+    "./http": "./src/http.ts",
+    "./logger": "./src/logger.ts",
+    "./url": "./src/url.ts"
   },
   "scripts": {
     "lint": "eslint .",

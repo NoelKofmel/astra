@@ -80,6 +80,22 @@ export default fixupConfigRules(
     },
 
     {
+      // Outbound HTTP goes through one client. The web app keeps Next.js's fetch.
+      files: ["apps/worker/**/*.ts", "packages/**/*.ts"],
+      ignores: ["packages/core/src/http.ts"],
+      rules: {
+        "no-restricted-globals": [
+          "error",
+          {
+            name: "fetch",
+            message:
+              "Use createHttpClient from @astra/core/http (docs/07-conventions.md#outbound-http).",
+          },
+        ],
+      },
+    },
+
+    {
       files: ["apps/web/**/*.{ts,tsx}"],
       extends: [nextVitals],
       settings: { next: { rootDir: path.join(import.meta.dirname, "apps/web") } },
