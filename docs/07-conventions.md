@@ -232,8 +232,10 @@ data valid for its job).
 - **`createHttpClient` from `@astra/core/http`**, one client per source, so a
   source's rate limit (`minIntervalMs`) stays its own. Nothing else calls
   `fetch`.
-- Every request carries Astra's **`User-Agent`** with a contact address and a
-  **timeout** of 15 s per attempt, body included.
+- Every request carries Astra's **`User-Agent`**,
+  `Astra (+https://astranews.ch)` — the website as the contact rather than an
+  email address, because the repository is public — and a **timeout** of 15 s
+  per attempt, body included.
 - **GET only, so far.** Network errors, timeouts, 429 and 5xx are retried
   twice, with exponential backoff from 1 s. A `Retry-After` is honoured up to
   30 s; beyond that the request fails, and its job's own retries take over.
