@@ -41,8 +41,8 @@ collectors, frontend, tests) and are not repeated here.
 | [Configuration and secrets](#configuration-and-secrets) | `settled` | — | `apps/worker/src/config.ts` |
 | [Time and IDs](#time-and-ids) | `settled` | — | `packages/db/src/schema.ts` |
 | [Background jobs](#background-jobs) | `settled` | — | `apps/worker/src/jobs/` |
-| [Errors](#errors) | `open` | phase 1 | — |
-| [Outbound HTTP](#outbound-http) | `open` | phase 1 | — |
+| [Errors](#errors) | `settled` | — | `HttpError` in `packages/core/src/http.ts` |
+| [Outbound HTTP](#outbound-http) | `settled` | — | `packages/core/src/http.ts` |
 | [AI calls](#ai-calls) | `open` | phase 3 | — |
 | [Documentation](#documentation) | `settled` | — | this file, `README.md` |
 
@@ -210,27 +210,42 @@ data valid for its job).
 
 ## Errors
 
-**Status:** `open` · settle in phase 1
+**Status:** `settled` · reference: `HttpError` in `packages/core/src/http.ts`
 
 - Distinguish **expected failures** (a source is down, a feed is malformed, a
   rate limit hit) from **bugs**. Expected failures are part of normal
   operation and are handled; bugs crash loudly.
-- A failing source never affects another (circuit breaker, `CLAUDE.md`).
-- Still to decide: typed error classes vs. a `Result` type for expected
-  failures.
+- **Expected failures are typed error classes**, thrown — no `Result` type.
+  Each extends `Error`, sets `name` and carries what a handler needs
+  (`HttpError`: `url`, `status`). Jobs already fail by throwing and BullMQ
+  retries on a throw; a `Result` would have to become an exception again at
+  every job boundary.
+- **Catch by class** where a failure is expected (`err instanceof
+  HttpError`) and let everything else through.
+- A failing source never affects another (circuit breaker, `CLAUDE.md`). The
+  breaker arrives with the collect job.
 
 ## Outbound HTTP
 
-**Status:** `open` · settle in phase 1
+**Status:** `settled` · reference: `packages/core/src/http.ts`
 
-- One HTTP client wrapper in `packages/core`. Collectors do not call `fetch`
-  directly.
-- The wrapper always sets the `User-Agent` with a contact address and a
-  timeout, retries idempotent requests with backoff, and respects per-source
-  rate limits.
-- Every response is parsed through a Zod schema before use.
+- **`createHttpClient` from `@astra/core/http`**, one client per source, so a
+  source's rate limit (`minIntervalMs`) stays its own. Nothing else calls
+  `fetch`.
+- Every request carries Astra's **`User-Agent`** with a contact address and a
+  **timeout** of 15 s per attempt, body included.
+- **GET only, so far.** Network errors, timeouts, 429 and 5xx are retried
+  twice, with exponential backoff from 1 s. A `Retry-After` is honoured up to
+  30 s; beyond that the request fails, and its job's own retries take over.
+- **`getJson` parses the body with a Zod schema** — unparsed JSON is not on
+  offer. `getText` returns feeds as text, a `304` included, for conditional
+  requests with `ETag` and `Last-Modified`.
+- Every failure the other side can cause is an `HttpError`
+  ([Errors](#errors)); a caller's abort stays an `AbortError`.
 
-**Enforcement:** lint rule against `fetch` inside collector adapters.
+**Enforcement:** ESLint `no-restricted-globals` on `fetch` in the worker and
+the packages, except in the client itself (`eslint.config.js`). The web app
+keeps Next.js's `fetch`.
 
 ## AI calls
 

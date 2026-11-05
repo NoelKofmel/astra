@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     "./env": "./src/env.ts",
+    "./http": "./src/http.ts",
     "./logger": "./src/logger.ts",
     "./url": "./src/url.ts"
   },
