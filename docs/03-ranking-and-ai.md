@@ -214,9 +214,9 @@ Plus infrastructure:
 |---|---|
 | Hetzner CAX21 | ~10.60 |
 | Domain | ~1.50 |
-| Backup storage | ~1.00 |
+| Backup storage (Storage Box BX11) | ~3.25 |
 | AI (above, ~$14.6) | ~11.70 |
-| **Total** | **~24.80** |
+| **Total** | **~27.05** |
 
 Inside the 25–30 CHF budget.
 

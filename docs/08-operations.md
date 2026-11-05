@@ -192,15 +192,33 @@ Harmless for now; enable IPv6 on the network once real client addresses matter.
 
 The timer runs every night at 03:30 UTC and fails visibly until this is done.
 
-1. Order a Hetzner **Storage Box** (the smallest is plenty), enable *SSH
-   support*, and enable **automatic snapshots** — they protect the backups
-   even from someone who controls the server.
-2. As `deploy`, give the server access (the box's SSH port is 23):
+1. As `deploy`, create the key the server logs in with. It comes first: the
+   console accepts SSH keys only while the box is created.
 
    ```bash
    sudo -iu deploy
-   ssh-keygen -t ed25519 -f ~/.ssh/storagebox -N ""
-   cat ~/.ssh/storagebox.pub | ssh -p 23 <user>@<user>.your-storagebox.de install-ssh-key
+   ssh-keygen -t ed25519 -f ~/.ssh/storagebox -N "" -C astra-backup
+   cat ~/.ssh/storagebox.pub
+   ```
+
+2. Hetzner Console → *Storage Boxes* → *Create Storage Box*:
+   - **Location:** a different one from the server's (Helsinki for a server in
+     Falkenstein), so a lost site does not take the backups with it.
+   - **Type:** BX11 — 1 TB is plenty.
+   - **SSH key:** the public key from step 1, and only that one. Leave the
+     password empty; Hetzner sets one nobody needs.
+   - **SSH Support** on (port 23). **External Reachability** off: the box then
+     answers inside the Hetzner network only, where the server is.
+
+   Then, under the box's *Snapshots*, switch on **automatic snapshots** —
+   daily, after the backup (06:00), keeping 10. They protect the backups even
+   from someone who controls the server.
+
+3. Still as `deploy`, point SSH at the box and connect once to accept its host
+   key (ED25519 `SHA256:XqONwb1S0zuj5A1CDxpOSuD2hnAArV1A3wKY7Z3sdgM`, the same
+   for every Storage Box):
+
+   ```bash
    cat >> ~/.ssh/config <<EOF
    Host storagebox
      HostName <user>.your-storagebox.de
@@ -208,16 +226,17 @@ The timer runs every night at 03:30 UTC and fails visibly until this is done.
      Port 23
      IdentityFile ~/.ssh/storagebox
    EOF
+   ssh -o StrictHostKeyChecking=accept-new storagebox pwd    # /home
    ```
 
-3. Create the repository and run a first backup:
+4. Create the repository and run a first backup:
 
    ```bash
    set -a; . /opt/astra/.env; set +a
    restic init
    exit
    sudo systemctl start astra-backup.service
-   journalctl -u astra-backup -n 20          # "backup stored: …"
+   sudo journalctl -u astra-backup -n 20     # "backup stored: …"
    systemctl list-timers astra-backup.timer
    ```
 
@@ -250,12 +269,20 @@ Always into a scratch database first — never straight over production:
 sudo -iu deploy
 set -a; . /opt/astra/.env; set +a
 restic snapshots --tag postgres
+umask 077    # the dump holds the whole database, and /tmp is shared
 restic dump latest /var/backups/astra/astra.dump > /tmp/astra.dump   # or a snapshot ID
 
 dc exec -T postgres createdb -U astra astra_restore
 dc exec -T postgres pg_restore -U astra -d astra_restore < /tmp/astra.dump
 dc exec -T postgres psql -U astra -d astra_restore -c 'select count(*) from stories'
+
+dc exec -T postgres dropdb -U astra astra_restore    # when done
+rm /tmp/astra.dump
 ```
+
+Tested by hand on 2026-11-05 with that night's snapshot: no errors, and the
+same tables, extensions and row counts as production at the time of the dump.
+`restic check --read-data` reads the whole repository back and verifies it.
 
 To replace production with it: `dc stop web worker`, drop and recreate the
 `astra` database, `pg_restore` into it, `dc start web worker`. A scheduled

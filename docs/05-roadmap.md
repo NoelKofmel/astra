@@ -26,12 +26,11 @@ yet, but everything is wired up.
       after an interim CPX12 (ADR-014)
 - [x] Domain + Caddy with automatic TLS
 - [x] Deploy pipeline: GHCR image → SSH → `docker compose up -d`
-- [ ] Nightly `pg_dump` to the storage box
+- [x] Nightly `pg_dump` to the storage box
 
-> **State on 2026-09-24:** live at `https://astranews.ch`. The first deploy was
-> a re-run of the `main` pipeline; it deployed, fetched the certificate and
-> verified `/api/health`. Left: the Storage Box for the nightly backup, and the
-> next merge to `main` — the first deploy triggered by a push. Step by step in
+> **Done on 2026-11-02:** live at `https://astranews.ch` on an Arm64 CAX21
+> (ADR-014), deployed on every push to `main` and backed up nightly to a
+> Storage Box in Helsinki. Step by step in
 > [`08-operations.md`](08-operations.md).
 
 **Done when:** `git push` to `main` deploys automatically and

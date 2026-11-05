@@ -287,8 +287,10 @@ additively — adding a column yes, renaming one no. That way a rollback survive
 contact with the database. `deploy.sh` rolls back on its own when the new
 release does not come up healthy.
 
-**Backups:** nightly `pg_dump` to a Hetzner Storage Box, 30-day retention —
-through restic, so the backups are encrypted and deduplicated. A **restore
+**Backups:** nightly `pg_dump` to a Hetzner Storage Box in another location,
+30-day retention — through restic, so the backups are encrypted and
+deduplicated. The box's own daily snapshots guard them against a compromised
+server. A **restore
 test** is on the roadmap (phase 8): a backup that has never been restored is not
 a backup.
 
